@@ -6,7 +6,7 @@ docker run --name mysql-jo
            -e MYSQL_DATABASE=keycloak
            -e MYSQL_USER=keycloak
            -e MYSQL_PASSWORD=keycloak
-           -v /var/jo/mysql/conf.d/:/etc/mysql/conf.d/
+           -v /var/jo/mysql/conf.d/:/etc/mysql/conf.d/:ro
            -p 3307:3306
            -d
            mysql:5.7.21
@@ -27,7 +27,7 @@ docker run --name keycloak-jo
            -e MYSQL_PORT_3306_TCP_ADDR=172.17.0.4
            -e MYSQL_PORT_3306_TCP_PORT=3306
            -e PROXY_ADDRESS_FORWARDING=true
-           -v /var/jo/keycloak/themes/jo:/opt/jboss/keycloak/themes/jo
+           -v /var/jo/keycloak/themes/jo:/opt/jboss/keycloak/themes/jo:ro
            -p 8181:8080
            -d
            jboss/keycloak:3.4.3.Final
@@ -37,4 +37,18 @@ MYSQL_PORT_3306_TCP_ADDR：必须是mysql-jo容器的IP，而不是宿主机的I
 
 MYSQL_PORT_3306_TCP_PORT：必须是mysql-jo容器中的端口，而不是映射到宿主机的端口。
 
-另外，不建议将themes目录映射到宿主机上，因为这会造成该目录为空目录。需要手动将默认主题复制到对应的宿主机目录中。而只映射themes的子目录jo，这样宿主机上虽然只能看到jo目录，但在容器中，themes目录原有的内容还在。
+另外，不建议将themes目录映射到宿主机上，因为这会造成该目录整个为空目录。从而，需要手动将默认主题复制到对应的宿主机目录中。而只映射themes的子目录jo，这样宿主机上虽然只能看到jo目录，但在容器中，themes目录原有的内容还在。
+
+# Nginx
+
+```shell
+docker run --name nginx-jo
+           -v /var/jo/nginx/certs/:/etc/nginx/certs/:ro
+           -v /var/jo/nginx/conf.d/:/etc/nginx/conf.d/:ro
+           -v /var/jo/nginx/web/:/usr/share/nginx/html/:ro
+           -p 10080:80
+           -p 10443:443
+           -d
+           nginx:1.13.8-alpine
+```
+

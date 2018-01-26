@@ -16,6 +16,21 @@ Camel的端点必须实现`org.apache.camel.Endpoint`接口。
 
 ## CamelTemplate
 
-## 组件
+`CamelTemplate`是对`CamelContext`的一个浅封装。
 
-Camel的组件实际上是一个端点工厂，用于创建端点实例。
+## 组件（Components）
+
+Camel的组件实际上是一个端点工厂，用于创建端点实例。但是，应用通常不直接调用组件来创建端点实例，而是通过`CamelContext`来间接访问组件。
+
+## 消息（Message）
+
+例如：请求消息（in消息）、响应消息（out消息）或异常消息（fault消息）。
+
+## 交换（Exchange）
+
+`Exchange`用于表示消息之间的交换。
+
+## 处理器（Processor）
+
+## 路由（Routes、RouteBuilders）
+

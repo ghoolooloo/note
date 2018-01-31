@@ -1,5 +1,7 @@
 Apache Camel 2.20.1
 
+Camel是一个集成框架。
+
 # 基本概念
 
 ## 端点（Endpoint）

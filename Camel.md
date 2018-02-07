@@ -1,4 +1,4 @@
-Apache Camel 2.20.2
+*Apache Camel 2.20.2*
 
 Camel是一个用于系统之间集成的框架，它的核心是一个路由引擎构建器。
 
@@ -94,4 +94,88 @@ Camel有两种方式来设定路由：
 1. 使用XML文件来配置；
 2. 使用一个Java DSL来设定。
 
+
+# 快速开始
+
+假设我们需要从一个目录（data/inbox）读取文件，处理它们（为了简化省略这一步），然后再写入到另一个目录（data/outbox）。
+
+![第一个例子](resources/Camel/第一个例子.png)
+
+## 非Camel的解决方案
+
+```java
+public class FileCopier {
+    public static void main(String args[]) throws Exception {
+        File inboxDirectory = new File("data/inbox");
+        File outboxDirectory = new File("data/outbox");
+        
+        outboxDirectory.mkdir();
+        
+        File[] files = inboxDirectory.listFiles();
+        for (File source : files) {
+            if (source.isFile()) {
+                File dest = new File(
+                        outboxDirectory.getPath() 
+                        + File.separator 
+                        + source.getName()); 
+                copyFile(source, dest);
+            }
+        }
+    }
+    
+    private static void copyFile(File source, File dest) 
+        throws IOException {
+        OutputStream out = new FileOutputStream(dest);
+        byte[] buffer = new byte[(int) source.length()];
+        FileInputStream in = new FileInputStream(source);
+        in.read(buffer);
+        try {
+            out.write(buffer);
+        } finally {
+            out.close();      
+            in.close();
+        }
+    }
+}
+```
+
+## Camel的解决方案
+
+```java
+public class FileCopierWithCamel {
+    public static void main(String args[]) throws Exception {
+        // create CamelContext
+        CamelContext context = new DefaultCamelContext();
+
+        // add our route to the CamelContext
+        context.addRoutes(new RouteBuilder() {
+            public void configure() {
+                from("file:data/inbox?noop=true").to("file:data/outbox");
+            }
+        });
+
+        // start the route and let it do its work
+        context.start();
+        Thread.sleep(10000);
+
+        // stop the CamelContext
+        context.stop();
+    }
+}
+```
+
+在POM中添加如下依赖：
+
+```xml
+<dependencies>
+  <dependency>
+    <groupId>org.apache.camel</groupId>
+    <artifactId>camel-core</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>org.slf4j</groupId>
+    <artifactId>slf4j-log4j12</artifactId>
+  </dependency>
+</dependencies>
+```
 

@@ -107,7 +107,7 @@ pom.xml：
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.11</version>
+      <version>4.12</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -131,11 +131,20 @@ mvn package
 
 > 在`mvn`之后，形如“xxx:xxx”的是目标，而只有一个单词的是阶段。
 >
-> 在同一条mvn命令中，可以同时包含有目标和阶段：
+> 在同一条mvn命令中，可以同时包含多个目标和阶段：
 >
 > ```bash
 > mvn clean dependency:copy-dependencies package
 > ```
+
+常用构建命令：
+
++ `mvn compile`：仅编译项目，但不打包；
++ `mvn test`：运行单元测试；
++ `mvn test-compile`：仅编译单元测试代码；
++ `mvn package`：编译、测试并打包项目；
++ `mvn install`：打包项目并将它安装到本地仓库；
++ `mvn clean`：清理构建，即删除`target`目录。
 
 ## 运行应用
 
@@ -368,7 +377,11 @@ Maven坐标在控制台输出时，常写作如下形式：
 
 `packaging`当前可取：`jar`（默认值）、`pom`、 `maven-plugin`、`ejb`、`war`、`ear`、`rar`、`par` 。
 
+
+
 # 依赖管理
+
+在`pom.xml`的`dependencies`元素中可以定义项目需要的所有依赖。当Maven开始构建时，它会自动安装这些依赖。Maven首先会去本地仓库中查找这些依赖并构建到项目中，如果本地仓库中没有找到，则会从配置的远程仓库中下载到本地仓库，然后再构建到项目中。
 
 # 项目生命周期
 
@@ -420,11 +433,318 @@ Maven坐标在控制台输出时，常写作如下形式：
 
 # Maven仓库
 
+## 本地仓库
+
+本地仓库主要作用是缓存从远程仓库中下载的依赖和、插件等。
+
+### 配置本地仓库
+
+本地仓库默认的位置是`~/.m2/repository/`。
+
+如果想将本地仓库放在其他地方，可以在`pom.xml`中进行如下配置：
+
+```xml
+<settings>
+  ...
+  <localRepository>/path/to/local/repo/</localRepository>
+  ...
+</settings>
+```
+
+## 远程仓库
+
+### 中央仓库
+
+### 使用镜像仓库
+
+
+
+### 搭建自己的私有仓库
+
+### 部署程序包到远程仓库
+
+首先，在`pom.xml`中配置目标远程仓库的URL：
+
+```xml
+<project>
+  ……
+  <distributionManagement>
+    <repository>
+      <id>mycompany-repository</id>
+      <name>MyCompany Repository</name>
+      <url>scp://repository.mycompany.com/repository/maven2</url>
+    </repository>
+  </distributionManagement>
+  ……
+</project>
+```
+
+然后，在配置文件`settings.xml`中配置连接远程仓库的认证信息：
+
+```xml
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                      http://maven.apache.org/xsd/settings-1.0.0.xsd">
+  ...
+  <servers>
+    <server>
+      <id>mycompany-repository</id>
+      <username>jvanzyl</username>
+      <!-- Default value is ~/.ssh/id_dsa -->
+      <privateKey>/path/to/identity</privateKey> (default is ~/.ssh/id_dsa)
+      <passphrase>my_key_passphrase</passphrase>
+    </server>
+  </servers>
+  ...
+</settings>
+```
+
+最后，运行下列命令部署程序包到远程仓库：
+
+```bash
+mvn deploy
+```
+
+
+
+# 资源
+
+目录`${basedir}/src/main/resources`用于放置资源文件、配置文件等，它们在打包时，将原样打包进JAR或WAR中。
+
+同样，目录`${basedir}/src/test/resources`用于放置测试用的资源。
+
+## 过滤资源
+
+为了`resources`目录下的资源文件可以通过`${属性名}`方式访问构建时的属性，只需在`pom.xml`中将相应资源的`filtering`设置为`true`就可以：
+
+```xml
+<build>
+    <resources>
+        <resource>
+            <directory>src/main/resources</directory>
+            <filtering>true</filtering>
+        </resource>
+    </resources>
+</build>
+```
+
+这些构建时属性是：
+
++ `pom.xml`的元素；
++ `pom.xml`的`properties`中定义的属性；
++ 配置文件`settings.xml`的元素；
++ 外部的属性文件中定义的属性；
++ 系统属性。
+
+### 引用`pom.xml`和`settings.xml`的元素
+
+假设在`resources`目录下有一个`app.properties`文件，则可以在该文件中访问一些属性：
+
+```properties
+# 访问 pom.xml 中的元素值
+app.name=${project.name}  # 或者 ${pom.name}
+app.finalName=${project.build.finalName}
+
+# 访问 settings.xml 中的元素值
+localRepo=${settings.localRepository}
+```
+
+你可以运行下列阶段命令：
+
+```bash
+mvn process-resources
+```
+
+则在`target/classes`目录下就可以看到过滤后的效果：
+
+```properties
+# 访问 pom.xml 中的属性
+app.name=my-app  # 或者 ${pom.name}
+app.finalName=my-app-1.0-SNAPSHOT
+
+# 访问 settings.xml 中的属性
+localRepo=/home/i/.m2/repository
+```
+
+> `finalName`的默认值是`${project.name}-${project.version}`。
+
+### 引用外部属性文件中定义的属性
+
+如果要引用外部属性文件中的属性，还需要在`pom.xml`中`filter`元素中指定外部属性文件的路径：
+
+`pom.xml`：
+
+```xml
+<build>
+    <filters>
+        <filter>src/main/filters/filter.properties</filter>
+    </filters>
+    <resources>
+        <resource>
+            <directory>src/main/resources</directory>
+            <filtering>true</filtering>
+        </resource>
+    </resources>
+</build>
+```
+
+### 引用`pom.xml`的`properties`中定义的属性
+
+`pom.xml`：
+
+```xml
+<project>
+  ……
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+  </build>
+ 
+  <properties>
+    <my.filter.value>hello</my.filter.value>
+  </properties>
+  ……
+</project>
+```
+
+`app.properties`：
+
+```properties
+# 访问 pom.xml 中的元素值
+app.name=${project.name}  # 或者 ${pom.name}
+app.finalName=${project.build.finalName}
+
+# 访问 settings.xml 中的元素值
+localRepo=${settings.localRepository}
+
+# 访问 properties 中定义的属性
+message=${my.filter.value}
+```
+
+### 引用系统属性
+
+系统属性有些是内置于java的，有些是通过命令行参数`-Dxxx`传递进来的。
+
+`app.properties`：
+
+```properties
+# 访问 pom.xml 中的元素值
+app.name=${project.name}  # 或者 ${pom.name}
+app.finalName=${project.build.finalName}
+
+# 访问 settings.xml 中的元素值
+localRepo=${settings.localRepository}
+
+# 访问 properties 中定义的属性
+message=${my.filter.value}
+
+# 访问系统属性
+java.version=${java.version}
+command.line.prop=${command.line.prop}
+```
+
+运行：
+
+```bash
+mvn process-resources "-Dcommand.line.prop=hello again"
+```
+
+
+
 # Profile
+
+# 多模块项目
+
+Maven的多模块项目，各模块之间既可以是嵌套结构的，也可以彼此扁平的。嵌套结构方便于集中构建，而扁平结构方便于各自分开构建。
+
+嵌套式多模块项目的结构：
+
+```
++- pom.xml
++- my-app
+| +- pom.xml
+| +- src
+|   +- main
+|     +- java
++- my-webapp
+| +- pom.xml
+| +- src
+|   +- main
+|     +- webapp
+```
+
+父模块要使用`modules`元素描述所包含的子模块，并且父模块的`packaging`必需设置为`pom`值：
+
+```xml
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                      http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+ 
+  <groupId>com.mycompany.app</groupId>
+  <artifactId>app</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+ 
+  <modules>
+    <module>my-app</module>
+    <module>my-webapp</module>
+  </modules>
+</project>
+```
+
+由于`my-webapp`模块依赖于`my-app`模块，因此，要在`my-webapp/pom.xml`中添加对`my-app`的依赖：
+
+```xml
+  ...
+  <dependencies>
+    <dependency>
+      <groupId>com.mycompany.app</groupId>
+      <artifactId>my-app</artifactId>
+      <version>1.0-SNAPSHOT</version>
+    </dependency>
+    ...
+  </dependencies>
+```
+
+所有的子模块都要使用`parent`元素来引用它的父模块：
+
+```xml
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                      http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <parent>
+    <groupId>com.mycompany.app</groupId>
+    <artifactId>app</artifactId>
+    <version>1.0-SNAPSHOT</version>
+  </parent>
+  ...
+```
+
+多模块项目可以只使用一条Maven构建命令，就构建所有的模块，只需要在顶层的父模块中运行构建命令。例如：
+
+```bash
+mvn verify
+```
+
+如果在父模块中，只希望构建自己，而不希望递归构建所有它的子模块，则只需要在运行Maven命令时，加上`—non-recursive`参数。
 
 # Archetype
 
 # 版本管理
+
+### 什么是`SNAPSHOT`版本
+
+`<version>`的值中包含“SNAPSHOT”的，例如：`1.0-SNAPSHOT`，表示开发版；不包含的是正式版。
+
+在发正式版过程中，版本号是`x.y-SNAPSHOT`的，将被发布为正式版`x.y`。同时，将开发版的版本号变为`x.(y+1)-SNAPSHOT`。
 
 # 配置代理
 

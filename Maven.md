@@ -375,15 +375,19 @@ Maven坐标在控制台输出时，常写作如下形式：
 + groupId:artifactId:packaging:version
 + groupId:artifactId:packaging:classifier:version
 
-`packaging`当前可取：`jar`（默认值）、`pom`、 `maven-plugin`、`ejb`、`war`、`ear`、`rar`、`par` 。
-
 
 
 # 依赖管理
 
 在`pom.xml`的`dependencies`元素中可以定义项目需要的所有依赖。当Maven开始构建时，它会自动安装这些依赖。Maven首先会去本地仓库中查找这些依赖并构建到项目中，如果本地仓库中没有找到，则会从配置的远程仓库中下载到本地仓库，然后再构建到项目中。
 
-# 项目生命周期
+# 构建生命周期
+
+构建生命周期由构建阶段组成，它定义了一个项目在构建过程中经历的步骤。而构建阶段是由插件目标组成的（插件目标通过绑定到构建阶段，而构建阶段关联）。
+
+> 有些构建阶段，它们的名字是由连字符分隔的复合单词（例如：`pre-*`、`post-*`、`process-*`等等），它们通常不应该在命令行中直接调用。因为，它们要么产生对我们没用的中间结果，要么只是做了一些准备工作（例如：启动Tomcat）。直接调用这些阶段将导致某些被启动的服务没办法正常关闭。
+
+Maven中有三个内置的构建生命周期：default、clean和site。
 
 ## Clean生命周期
 
@@ -427,9 +431,112 @@ Maven坐标在控制台输出时，常写作如下形式：
 | `post-site`   | execute processes needed to finalize the site generation, and to prepare for site deployment |
 | `site-deploy` | deploy the generated site documentation to the specified web server |
 
+## 内置的生命周期绑定
 
+### Clean生命周期绑定
+
+| `clean` | `clean:clean` |
+| ------- | ------------- |
+|         |               |
+
+###  `packaging`是`ejb`、`ejb3`、`jar`、`par`、`rar`、`war`的默认生命周期绑定
+
+| `process-resources`      | `resources:resources`                                        |
+| ------------------------ | ------------------------------------------------------------ |
+| `compile`                | `compiler:compile`                                           |
+| `process-test-resources` | `resources:testResources`                                    |
+| `test-compile`           | `compiler:testCompile`                                       |
+| `test`                   | `surefire:test`                                              |
+| `package`                | `ejb:ejb` *or* `ejb3:ejb3` *or* `jar:jar` *or* `par:par` *or* `rar:rar` *or* `war:war` |
+| `install`                | `install:install`                                            |
+| `deploy`                 | `deploy:deploy`                                              |
+
+### `packaging`是`ear`的默认生命周期绑定
+
+| `generate-resources` | `ear:generate-application-xml` |
+| -------------------- | ------------------------------ |
+| `process-resources`  | `resources:resources`          |
+| `package`            | `ear:ear`                      |
+| `install`            | `install:install`              |
+| `deploy`             | `deploy:deploy`                |
+
+### `packaging`是`maven-plugin`的默认生命周期绑定
+
+| `generate-resources`     | `plugin:descriptor`                                |
+| ------------------------ | -------------------------------------------------- |
+| `process-resources`      | `resources:resources`                              |
+| `compile`                | `compiler:compile`                                 |
+| `process-test-resources` | `resources:testResources`                          |
+| `test-compile`           | `compiler:testCompile`                             |
+| `test`                   | `surefire:test`                                    |
+| `package`                | `jar:jar` *and* `plugin:addPluginArtifactMetadata` |
+| `install`                | `install:install`                                  |
+| `deploy`                 | `deploy:deploy`                                    |
+
+### `packaging`是`pom`的默认生命周期绑定
+
+| `package` | `site:attach-descriptor` |
+| --------- | ------------------------ |
+| `install` | `install:install`        |
+| `deploy`  | `deploy:deploy`          |
+
+### Site生命周期绑定
+
+| `site`        | `site:site`   |
+| ------------- | ------------- |
+| `site-deploy` | `site:deploy` |
+
+## 自定义的生命周期绑定
+
+可以在POM中显式设置插件目标与构建阶段的绑定：
+
+```xml
+...
+ <plugin>
+   <groupId>com.mycompany.example</groupId>
+   <artifactId>display-maven-plugin</artifactId>
+   <version>1.0</version>
+   <executions>
+     <execution>
+       <phase>process-test-resources</phase>
+       <goals>
+         <goal>time</goal>
+       </goals>
+     </execution>
+   </executions>
+ </plugin>
+...
+```
+
+
+
+# 打包方式
+
+要对Maven项目打包，只需要执行下列Maven命令：
+
+```bash
+mvn package
+```
+
+打包方式由`packaging`设置，它当前内置的类型有：`jar`（默认值）、`pom`、 `maven-plugin`、`ejb`、`war`、`ear`、`rar`、`par` 。
+
+除了内置的类型，还可以启用其他的一些packaging类型（例如：`plexus-application`）。这需要
+
+在POM中添加相应的插件（例如：Plexus插件），并且设置它的`<extensions>true</extensions>`。
 
 # 插件
+
+插件的主要作用就是为Maven提供插件目标。
+
+## 插件目标
+
+插件目标代表一个具体的任务，它可以绑定到0个或任意多个构建阶段。
+
+没有与任何构建阶段绑定的插件目标，不属于任何构建生命周期，它们通常作为一个任务，通过Maven命令直接执行。
+
+当在一个项目中执行一个构建阶段时，其实是执行这个项目包含的插件（有些默认包含的插件是由`packaging`的设置决定的）中，与该构建阶段及在它之前的阶段绑定的插件目标。
+
+当多个插件目标绑定到同一个构建阶段时，它们的执行顺序是：首先执行与`packaging`相关的内置绑定目标，然后再按在POM中定义的插件的先后顺序依次执行对应目标。另外，可以使用`executions`元素来获得目标执行顺序的更多控制权。
 
 # Maven仓库
 
@@ -508,6 +615,10 @@ mvn deploy
 
 
 
+# 属性和插值
+
+
+
 # 资源
 
 目录`${basedir}/src/main/resources`用于放置资源文件、配置文件等，它们在打包时，将原样打包进JAR或WAR中。
@@ -516,7 +627,9 @@ mvn deploy
 
 ## 过滤资源
 
-为了`resources`目录下的资源文件可以通过`${属性名}`方式访问构建时的属性，只需在`pom.xml`中将相应资源的`filtering`设置为`true`就可以：
+过滤的资源文件中允许通过`${属性名}`方式访问构建时的属性。
+
+例如：为了将`resources`目录下的资源文件变成过滤资源，只需在`pom.xml`中将相应资源的`filtering`设置为`true`就可以：
 
 ```xml
 <build>
@@ -531,9 +644,9 @@ mvn deploy
 
 这些构建时属性是：
 
-+ `pom.xml`的元素；
++ `pom.xml`的元素（没有子元素）；
 + `pom.xml`的`properties`中定义的属性；
-+ 配置文件`settings.xml`的元素；
++ 配置文件`settings.xml`的元素（没有子元素）；
 + 外部的属性文件中定义的属性；
 + 系统属性。
 
@@ -660,25 +773,249 @@ mvn process-resources "-Dcommand.line.prop=hello again"
 
 # 多模块项目
 
-Maven的多模块项目，各模块之间既可以是嵌套结构的，也可以彼此扁平的。嵌套结构方便于集中构建，而扁平结构方便于各自分开构建。
+## 项目继承
 
-嵌套式多模块项目的结构：
+Maven的项目之间可互相继承，子模块的`pom.xml`中没有的元素将从父模块的`pom.xml`中继承下来；而子模块中有的元素，有些会覆盖父模块中同名的元素（例如：`groupId`、`version`等），而有些则会与父模块中同名元素进行合并，例如：
+
++ dependencies
++ developers and contributors
++ plugin lists (including reports)
++ plugin executions with matching ids
++ plugin configuration
++ resources
+
+Maven的项目继承，各模块之间既可以是嵌套结构的，也可以彼此扁平的。
+
+> 注意：构建父模块并不会构建子模块，反之亦然。
+
+### 嵌套式
+
+项目结构：
 
 ```
-+- pom.xml
-+- my-app
-| +- pom.xml
-| +- src
-|   +- main
-|     +- java
-+- my-webapp
-| +- pom.xml
-| +- src
-|   +- main
-|     +- webapp
+my-app
+  |-- my-module
+  |   `-- pom.xml
+  `-- pom.xml
 ```
 
-父模块要使用`modules`元素描述所包含的子模块，并且父模块的`packaging`必需设置为`pom`值：
+`my-app/pom.xml`：
+
+```xml
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.mycompany.app</groupId>
+  <artifactId>my-app</artifactId>
+  <packaging>pom</packaging>
+  <version>1</version>
+</project>
+```
+
+父模块的`packaging`必须是`pom`。
+
+`my-module/pom.xml`：
+
+```xml
+<project>
+  <parent>
+    <groupId>com.mycompany.app</groupId>
+    <artifactId>my-app</artifactId>
+    <version>1</version>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.mycompany.app</groupId>
+  <artifactId>my-module</artifactId>
+  <version>1</version>
+</project>
+```
+
+子模块使用`parent`元素来继承指定父模块。
+
+`my-module/pom.xml`中与父模块相同部分可以省略：
+
+```xml
+<project>
+  <parent>
+    <groupId>com.mycompany.app</groupId>
+    <artifactId>my-app</artifactId>
+    <version>1</version>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>my-module</artifactId>
+</project>
+```
+
+在构建嵌套式的子模块时，父模块**不需要**事先安装到仓库，也不需要显式使用`relativePath`元素。
+
+### 扁平式
+
+在扁平式的项目继承中，父模块与子模块在位置上是相互独立的，子模块没有嵌套在父模块中。
+
+在使用`parent`来配置父模块时，如果父模块已经事先安装到仓库中，则配置与嵌套式一样；否则，需要使用`relativePath`元素来显式指定父模块的`pom.xml`相对于当前模块的`pom.xml`的位置：
+
+扁平式的项目结构：
+
+```
+.
+ |-- my-module
+ |   `-- pom.xml
+ `-- parent
+     `-- pom.xml
+```
+
+`parent/pom.xml`：
+
+```xml
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.mycompany.app</groupId>
+  <artifactId>my-app</artifactId>
+  <packaging>pom</packaging>
+  <version>1</version>
+</project>
+```
+
+父模块的`packaging`必须是`pom`。
+
+`my-module/pom.xml`：
+
+```xml
+<project>
+  <parent>
+    <groupId>com.mycompany.app</groupId>
+    <artifactId>my-app</artifactId>
+    <version>1</version>
+    <relativePath>../parent/pom.xml</relativePath>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>my-module</artifactId>
+</project>
+```
+
+如果`my-app`模块没有事先安装到仓库，则必须显式设置`relativePath`元素。
+
+> `relativePath`的默认值是`../pom.xml`。
+
+## 项目聚合
+
+### 嵌套式
+
+项目结构：
+
+```
+my-app
+  |-- my-module
+  |   `-- pom.xml
+  `-- pom.xml
+```
+
+`my-app/pom.xml`：
+
+```xml
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.mycompany.app</groupId>
+  <artifactId>my-app</artifactId>
+  <version>1</version>
+  <packaging>pom</packaging>
+ 
+  <modules>
+    <module>my-module</module>
+  </modules>
+</project>
+```
+
+聚合模块通过`modules`元素来指定各被聚合模块。`module`的值是被聚合模块的路径（相对于聚合模块的路径）。
+
+聚合模块的`packaging`必须是`pom`。
+
+`my-module/pom.xml`：
+
+```xml
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.mycompany.app</groupId>
+  <artifactId>my-module</artifactId>
+  <version>1</version>
+</project>
+```
+
+被聚合模块不需要专门配置。并且，被聚合模块的POM中，与聚合模块相同的部分也不能省略，也不能从聚合模块的POM中继承任何东西。
+
+### 扁平式
+
+扁平式的项目结构：
+
+```
+.
+ |-- my-module
+ |   `-- pom.xml
+ `-- aggregation
+     `-- pom.xml
+```
+
+`aggregation/pom.xml`：
+
+```xml
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.mycompany.app</groupId>
+  <artifactId>my-app</artifactId>
+  <version>1</version>
+  <packaging>pom</packaging>
+ 
+  <modules>
+    <module>../my-module</module>
+  </modules>
+</project>
+```
+
+项目聚合的扁平式与嵌套式实际上是一样的，只不过要注意设置正确被聚合模块的相对路径。
+
+### 聚合项目的构建
+
+在聚合模块上执行的Maven命令，也会自动在所有被聚合模块上执行。反之则不会。
+
+这样，聚合项目就可以只使用一条Maven构建命令，就构建整个聚合项目。例如，只需要在聚合模块中运行如下构建命令，则整个聚合项目都会被构建：
+
+```bash
+mvn verify
+```
+
+如果在聚合模块中，只希望构建自己，而不希望构建它的被聚合模块，则只需要在运行Maven命令时，加上`--non-recursive`参数：
+
+```bach
+mvn verify --non-recursive
+```
+
+## 继承和聚合的关系
+
+在多模块Maven项目中，聚合与继承其实是两个不同的概念，其目的完全不同。聚合主要是为了方便快速构建项目，而继承则是为了消除重得配置。
+
+它们的共同特点是，聚合模块和父模块的POM的`packaging`都必须是`pom`。
+
+![聚合与继承](resources/Maven/聚合与继承.png)
+
+聚合和继承是可以同时使用的。
+
+混合的项目结构：
+
+```
+app
+  +- pom.xml
+  +- my-app
+  | +- pom.xml
+  | +- src
+  |   +- main
+  |     +- java
+  +- my-webapp
+  | +- pom.xml
+  | +- src
+  |   +- main
+  |     +- webapp
+```
+
+父模块要使用`modules`元素描述所包含的子模块，并且父模块的`packaging`必需设置为`pom`值。`app/pom.xml`：
 
 ```xml
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -713,7 +1050,7 @@ Maven的多模块项目，各模块之间既可以是嵌套结构的，也可以
   </dependencies>
 ```
 
-所有的子模块都要使用`parent`元素来引用它的父模块：
+所有的子模块都要使用`parent`元素来继承它的父模块：
 
 ```xml
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -728,19 +1065,15 @@ Maven的多模块项目，各模块之间既可以是嵌套结构的，也可以
   ...
 ```
 
-多模块项目可以只使用一条Maven构建命令，就构建所有的模块，只需要在顶层的父模块中运行构建命令。例如：
+这样，模块`my-app`和`my-module`的POM会继承`app`模块的POM，同时，在`app`上执行的Maven构建命令，也会自动在模块`my-app`和`my-module`中执行。
 
-```bash
-mvn verify
-```
-
-如果在父模块中，只希望构建自己，而不希望递归构建所有它的子模块，则只需要在运行Maven命令时，加上`—non-recursive`参数。
+>  另外，要注意：虽然`my-module`依赖于`my-app`，但单独构建`my-module`，并不会自动构建它的依赖模块`my-app`。因此，在构建一个模块时，要么与依赖模块一起构建，要么先将依赖模块安装到仓库。
 
 # Archetype
 
 # 版本管理
 
-### 什么是`SNAPSHOT`版本
+## 什么是`SNAPSHOT`版本
 
 `<version>`的值中包含“SNAPSHOT”的，例如：`1.0-SNAPSHOT`，表示开发版；不包含的是正式版。
 

@@ -159,6 +159,8 @@ Maven是一个项目管理工具。
 
 ## 生成项目
 
+在Maven中，可以使用Archetype来生成项目的骨架：
+
 ```bash
 mvn archetype:generate -DgroupId=com.mycompany.app -DartifactId=my-app -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false
 ```
@@ -243,20 +245,22 @@ pom.xml：
 
 ```bash
 cd my-app
-mvn package
+mvn clean package
 ```
 
-这里`package`是Maven的一个**阶段（phase）**。阶段是**构建生成周期（build lifecycle）**的一个步骤，而构建生命周期则是多个阶段组成的有序序列。
+这里`clean`和`package`都是Maven的**构建阶段（phase）**。构建阶段是**构建生成周期（build lifecycle）**的一个步骤，而构建生命周期则是多个构建阶段组成的有序序列。
 
-当执行一个阶段时，Maven将依次执行该阶段之前的所有阶段，然后再执行该阶段。
+使用Maven构建项目时，既可以执行一个或多个构建阶段，也可以执行一个或多个插件目标，还可以混合使用。Maven支持直接执行插件目标是因为有些任务不适合绑定在生命周期上，例如：`maven-help-plugin:describe`。
 
-> 在`mvn`之后，形如“xxx:xxx”的是目标，而只有一个单词的是阶段。
->
-> 在同一条mvn命令中，可以同时包含多个目标和阶段：
->
-> ```bash
-> mvn clean dependency:copy-dependencies package
-> ```
+在同一条mvn命令中，可以同时包含多个插件目标和构建阶段：
+
+```bash
+mvn clean dependency:copy-dependencies package
+```
+
+当执行一个构建阶段时，Maven将依次执行该构建阶段之前的所有构建阶段（在同一个构建生命周期中），然后再执行该构建阶段。而执行一个插件目标，则只会执行该插件目标 ，而不会执行其他插件目标 。
+
+> 在`mvn`命令之后，形如“xxx:xxx”的是插件目标，而只有一个单词的是构建阶段。
 
 常用构建命令：
 
@@ -289,48 +293,666 @@ POM通常定义在项目根目录下的`pom.xml`文件中。
 
 ## POM的结构
 
+参见：[Technical Project Descriptor](http://maven.apache.org/ref/current/maven-model/maven.html)
+
 ```xml
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-                      http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
- 
-  <!-- The Basics -->
-  <groupId>...</groupId>
-  <artifactId>...</artifactId>
-  <version>...</version>
-  <packaging>...</packaging>
-  <dependencies>...</dependencies>
-  <parent>...</parent>
-  <dependencyManagement>...</dependencyManagement>
-  <modules>...</modules>
-  <properties>...</properties>
- 
-  <!-- Build Settings -->
-  <build>...</build>
-  <reporting>...</reporting>
- 
-  <!-- More Project Information -->
-  <name>...</name>
-  <description>...</description>
-  <url>...</url>
-  <inceptionYear>...</inceptionYear>
-  <licenses>...</licenses>
-  <organization>...</organization>
-  <developers>...</developers>
-  <contributors>...</contributors>
- 
-  <!-- Environment Settings -->
-  <issueManagement>...</issueManagement>
-  <ciManagement>...</ciManagement>
-  <mailingLists>...</mailingLists>
-  <scm>...</scm>
-  <prerequisites>...</prerequisites>
-  <repositories>...</repositories>
-  <pluginRepositories>...</pluginRepositories>
-  <distributionManagement>...</distributionManagement>
-  <profiles>...</profiles>
+<project xmlns="http://maven.apache.org/POM/4.0.0" 
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion/>
+
+  <parent>
+    <groupId/>
+    <artifactId/>
+    <version/>
+    <relativePath/>
+  </parent>
+
+  <groupId/>
+  <artifactId/>
+  <version/>
+  <packaging/>
+
+  <name/>
+  <description/>
+  <url/>
+  <inceptionYear/>
+  <organization>
+    <name/>
+    <url/>
+  </organization>
+  <licenses>
+    <license>
+      <name/>
+      <url/>
+      <distribution/>
+      <comments/>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id/>
+      <name/>
+      <email/>
+      <url/>
+      <organization/>
+      <organizationUrl/>
+      <roles/>
+      <timezone/>
+      <properties>
+        <key>value</key>
+      </properties>
+    </developer>
+  </developers>
+  <contributors>
+    <contributor>
+      <name/>
+      <email/>
+      <url/>
+      <organization/>
+      <organizationUrl/>
+      <roles/>
+      <timezone/>
+      <properties>
+        <key>value</key>
+      </properties>
+    </contributor>
+  </contributors>
+
+  <mailingLists>
+    <mailingList>
+      <name/>
+      <subscribe/>
+      <unsubscribe/>
+      <post/>
+      <archive/>
+      <otherArchives/>
+    </mailingList>
+  </mailingLists>
+
+  <prerequisites>
+    <maven/>
+  </prerequisites>
+
+  <modules/>
+
+  <scm>
+    <connection/>
+    <developerConnection/>
+    <tag/>
+    <url/>
+  </scm>
+  <issueManagement>
+    <system/>
+    <url/>
+  </issueManagement>
+  <ciManagement>
+    <system/>
+    <url/>
+    <notifiers>
+      <notifier>
+        <type/>
+        <sendOnError/>
+        <sendOnFailure/>
+        <sendOnSuccess/>
+        <sendOnWarning/>
+        <address/>
+        <configuration>
+          <key>value</key>
+        </configuration>
+      </notifier>
+    </notifiers>
+  </ciManagement>
+
+  <distributionManagement>
+    <repository>
+      <uniqueVersion/>
+      <releases>
+        <enabled/>
+        <updatePolicy/>
+        <checksumPolicy/>
+      </releases>
+      <snapshots>
+        <enabled/>
+        <updatePolicy/>
+        <checksumPolicy/>
+      </snapshots>
+      <id/>
+      <name/>
+      <url/>
+      <layout/>
+    </repository>
+    <snapshotRepository>
+      <uniqueVersion/>
+      <releases>
+        <enabled/>
+        <updatePolicy/>
+        <checksumPolicy/>
+      </releases>
+      <snapshots>
+        <enabled/>
+        <updatePolicy/>
+        <checksumPolicy/>
+      </snapshots>
+      <id/>
+      <name/>
+      <url/>
+      <layout/>
+    </snapshotRepository>
+    <site>
+      <id/>
+      <name/>
+      <url/>
+    </site>
+    <downloadUrl/>
+    <relocation>
+      <groupId/>
+      <artifactId/>
+      <version/>
+      <message/>
+    </relocation>
+    <status/>
+  </distributionManagement>
+
+  <properties>
+    <key>value</key>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId/>
+        <artifactId/>
+        <version/>
+        <type/>
+        <classifier/>
+        <scope/>
+        <systemPath/>
+        <exclusions>
+          <exclusion>
+            <artifactId/>
+            <groupId/>
+          </exclusion>
+        </exclusions>
+        <optional/>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId/>
+      <artifactId/>
+      <version/>
+      <type/>
+      <classifier/>
+      <scope/>
+      <systemPath/>
+      <exclusions>
+        <exclusion>
+          <artifactId/>
+          <groupId/>
+        </exclusion>
+      </exclusions>
+      <optional/>
+    </dependency>
+  </dependencies>
+
+  <repositories>
+    <repository>
+      <releases>
+        <enabled/>
+        <updatePolicy/>
+        <checksumPolicy/>
+      </releases>
+      <snapshots>
+        <enabled/>
+        <updatePolicy/>
+        <checksumPolicy/>
+      </snapshots>
+      <id/>
+      <name/>
+      <url/>
+      <layout/>
+    </repository>
+  </repositories>
+  <pluginRepositories>
+    <pluginRepository>
+      <releases>
+        <enabled/>
+        <updatePolicy/>
+        <checksumPolicy/>
+      </releases>
+      <snapshots>
+        <enabled/>
+        <updatePolicy/>
+        <checksumPolicy/>
+      </snapshots>
+      <id/>
+      <name/>
+      <url/>
+      <layout/>
+    </pluginRepository>
+  </pluginRepositories>
+
+  <build>
+    <sourceDirectory/>
+    <scriptSourceDirectory/>
+    <testSourceDirectory/>
+    <outputDirectory/>
+    <testOutputDirectory/>
+    <extensions>
+      <extension>
+        <groupId/>
+        <artifactId/>
+        <version/>
+      </extension>
+    </extensions>
+    <defaultGoal/>
+    <resources>
+      <resource>
+        <targetPath/>
+        <filtering/>
+        <directory/>
+        <includes/>
+        <excludes/>
+      </resource>
+    </resources>
+    <testResources>
+      <testResource>
+        <targetPath/>
+        <filtering/>
+        <directory/>
+        <includes/>
+        <excludes/>
+      </testResource>
+    </testResources>
+    <directory/>
+    <finalName/>
+    <filters/>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId/>
+          <artifactId/>
+          <version/>
+          <extensions/>
+          <executions>
+            <execution>
+              <id/>
+              <phase/>
+              <goals/>
+              <inherited/>
+              <configuration/>
+            </execution>
+          </executions>
+          <dependencies>
+            <dependency>
+              <groupId/>
+              <artifactId/>
+              <version/>
+              <type/>
+              <classifier/>
+              <scope/>
+              <systemPath/>
+              <exclusions>
+                <exclusion>
+                  <artifactId/>
+                  <groupId/>
+                </exclusion>
+              </exclusions>
+              <optional/>
+            </dependency>
+          </dependencies>
+          <goals/>
+          <inherited/>
+          <configuration/>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId/>
+        <artifactId/>
+        <version/>
+        <extensions/>
+        <executions>
+          <execution>
+            <id/>
+            <phase/>
+            <goals/>
+            <inherited/>
+            <configuration/>
+          </execution>
+        </executions>
+        <dependencies>
+          <dependency>
+            <groupId/>
+            <artifactId/>
+            <version/>
+            <type/>
+            <classifier/>
+            <scope/>
+            <systemPath/>
+            <exclusions>
+              <exclusion>
+                <artifactId/>
+                <groupId/>
+              </exclusion>
+            </exclusions>
+            <optional/>
+          </dependency>
+        </dependencies>
+        <goals/>
+        <inherited/>
+        <configuration/>
+      </plugin>
+    </plugins>
+  </build>
+
+  <reports/>
+  <reporting>
+    <excludeDefaults/>
+    <outputDirectory/>
+    <plugins>
+      <plugin>
+        <groupId/>
+        <artifactId/>
+        <version/>
+        <reportSets>
+          <reportSet>
+            <id/>
+            <reports/>
+            <inherited/>
+            <configuration/>
+          </reportSet>
+        </reportSets>
+        <inherited/>
+        <configuration/>
+      </plugin>
+    </plugins>
+  </reporting>
+
+  <profiles>
+    <profile>
+      <id/>
+      <activation>
+        <activeByDefault/>
+        <jdk/>
+        <os>
+          <name/>
+          <family/>
+          <arch/>
+          <version/>
+        </os>
+        <property>
+          <name/>
+          <value/>
+        </property>
+        <file>
+          <missing/>
+          <exists/>
+        </file>
+      </activation>
+      <build>
+        <defaultGoal/>
+        <resources>
+          <resource>
+            <targetPath/>
+            <filtering/>
+            <directory/>
+            <includes/>
+            <excludes/>
+          </resource>
+        </resources>
+        <testResources>
+          <testResource>
+            <targetPath/>
+            <filtering/>
+            <directory/>
+            <includes/>
+            <excludes/>
+          </testResource>
+        </testResources>
+        <directory/>
+        <finalName/>
+        <filters/>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId/>
+              <artifactId/>
+              <version/>
+              <extensions/>
+              <executions>
+                <execution>
+                  <id/>
+                  <phase/>
+                  <goals/>
+                  <inherited/>
+                  <configuration/>
+                </execution>
+              </executions>
+              <dependencies>
+                <dependency>
+                  <groupId/>
+                  <artifactId/>
+                  <version/>
+                  <type/>
+                  <classifier/>
+                  <scope/>
+                  <systemPath/>
+                  <exclusions>
+                    <exclusion>
+                      <artifactId/>
+                      <groupId/>
+                    </exclusion>
+                  </exclusions>
+                  <optional/>
+                </dependency>
+              </dependencies>
+              <goals/>
+              <inherited/>
+              <configuration/>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+        <plugins>
+          <plugin>
+            <groupId/>
+            <artifactId/>
+            <version/>
+            <extensions/>
+            <executions>
+              <execution>
+                <id/>
+                <phase/>
+                <goals/>
+                <inherited/>
+                <configuration/>
+              </execution>
+            </executions>
+            <dependencies>
+              <dependency>
+                <groupId/>
+                <artifactId/>
+                <version/>
+                <type/>
+                <classifier/>
+                <scope/>
+                <systemPath/>
+                <exclusions>
+                  <exclusion>
+                    <artifactId/>
+                    <groupId/>
+                  </exclusion>
+                </exclusions>
+                <optional/>
+              </dependency>
+            </dependencies>
+            <goals/>
+            <inherited/>
+            <configuration/>
+          </plugin>
+        </plugins>
+      </build>
+
+      <modules/>
+
+      <distributionManagement>
+        <repository>
+          <uniqueVersion/>
+          <releases>
+            <enabled/>
+            <updatePolicy/>
+            <checksumPolicy/>
+          </releases>
+          <snapshots>
+            <enabled/>
+            <updatePolicy/>
+            <checksumPolicy/>
+          </snapshots>
+          <id/>
+          <name/>
+          <url/>
+          <layout/>
+        </repository>
+        <snapshotRepository>
+          <uniqueVersion/>
+          <releases>
+            <enabled/>
+            <updatePolicy/>
+            <checksumPolicy/>
+          </releases>
+          <snapshots>
+            <enabled/>
+            <updatePolicy/>
+            <checksumPolicy/>
+          </snapshots>
+          <id/>
+          <name/>
+          <url/>
+          <layout/>
+        </snapshotRepository>
+        <site>
+          <id/>
+          <name/>
+          <url/>
+        </site>
+        <downloadUrl/>
+        <relocation>
+          <groupId/>
+          <artifactId/>
+          <version/>
+          <message/>
+        </relocation>
+        <status/>
+      </distributionManagement>
+
+      <properties>
+        <key>value</key>
+      </properties>
+
+      <dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId/>
+            <artifactId/>
+            <version/>
+            <type/>
+            <classifier/>
+            <scope/>
+            <systemPath/>
+            <exclusions>
+              <exclusion>
+                <artifactId/>
+                <groupId/>
+              </exclusion>
+            </exclusions>
+            <optional/>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>
+      <dependencies>
+        <dependency>
+          <groupId/>
+          <artifactId/>
+          <version/>
+          <type/>
+          <classifier/>
+          <scope/>
+          <systemPath/>
+          <exclusions>
+            <exclusion>
+              <artifactId/>
+              <groupId/>
+            </exclusion>
+          </exclusions>
+          <optional/>
+        </dependency>
+      </dependencies>
+
+      <repositories>
+        <repository>
+          <releases>
+            <enabled/>
+            <updatePolicy/>
+            <checksumPolicy/>
+          </releases>
+          <snapshots>
+            <enabled/>
+            <updatePolicy/>
+            <checksumPolicy/>
+          </snapshots>
+          <id/>
+          <name/>
+          <url/>
+          <layout/>
+        </repository>
+      </repositories>
+      <pluginRepositories>
+        <pluginRepository>
+          <releases>
+            <enabled/>
+            <updatePolicy/>
+            <checksumPolicy/>
+          </releases>
+          <snapshots>
+            <enabled/>
+            <updatePolicy/>
+            <checksumPolicy/>
+          </snapshots>
+          <id/>
+          <name/>
+          <url/>
+          <layout/>
+        </pluginRepository>
+      </pluginRepositories>
+
+      <reports/>
+      <reporting>
+        <excludeDefaults/>
+        <outputDirectory/>
+        <plugins>
+          <plugin>
+            <groupId/>
+            <artifactId/>
+            <version/>
+            <reportSets>
+              <reportSet>
+                <id/>
+                <reports/>
+                <inherited/>
+                <configuration/>
+              </reportSet>
+            </reportSets>
+            <inherited/>
+            <configuration/>
+          </plugin>
+        </plugins>
+      </reporting>
+    </profile>
+  </profiles>
 </project>
 ```
 
@@ -490,7 +1112,7 @@ POM通常定义在项目根目录下的`pom.xml`文件中。
 
 ## Maven坐标
 
-POM中的`groupId`、`artifactId`、`version`、`packaging`（可选）和`classifier`（可选）五个元素构成了所谓的**Maven坐标**——它唯一定位一个Maven项目。
+POM中的`groupId`、`artifactId`、`version`、`packaging`（可选）和`classifier`（可选）五个元素构成了所谓的**Maven坐标**——它唯一定位一个Maven工件（依赖和插件）。
 
 Maven坐标在控制台输出时，常写作如下形式：
 
@@ -499,23 +1121,304 @@ Maven坐标在控制台输出时，常写作如下形式：
 + groupId:artifactId:packaging:classifier:version
 
 
+`classifier`：用来区分那些由相同POM构建，但生成的内容不相同的工件。默认值为空。
+
+例如：`foo`这个项目，使用不同插件可以生成`foo-1.0.jar`、`foo-1.0-jdk14.jar`、`foo-1.0-javadoc.jar`、`foo-1.0-sources.jar`等等工件。则`jdk14`、`javadoc`和`sources`就是这个项目的`classifier`，可以使用这些`classifier`直接定位到相应工件。
+
+注意：与`packaging`不同，`classifier`不是在项目中直接定义的，而是由插件生成的。
+
+> 实际上，`version`也是可以缺省的，这时默认为最新release版本。
+
 ## 查看生效的POM
 
 ```bash
 $ mvn help:effective-pom -P appserverConfig-dev
 ```
 
+# 项目依赖
 
-
-# 依赖管理
+## 配置依赖
 
 在`pom.xml`的`dependencies`元素中可以定义项目需要的所有依赖。当Maven开始构建时，它会自动安装这些依赖。Maven首先会去本地仓库中查找这些依赖并构建到项目中，如果本地仓库中没有找到，则会从配置的远程仓库中下载到本地仓库，然后再构建到项目中。
+
+另外，依赖具有传递性。依赖的依赖也会被自动下载。
+
+![依赖传递](resources/Maven/依赖传递.jpg)
+
+```xml
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                      https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  ...
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.0</version>
+      <type>jar</type>
+      <scope>test</scope>
+      <optional>true</optional>
+      <exclusions>
+      	<exclusion>...</exclusion>
+      </exclusions>
+    </dependency>
+    ...
+  </dependencies>
+  ...
+</project>
+```
+
+`type`：依赖类型，对应于Maven坐标中的`packaging`。默认值为`jar`。
+
+## 依赖范围
+
+依赖范围是用于限制依赖的传递范围，从而影响构建任务的`classpath`。
+
+- `compile`：这是默认的依赖范围。`compile`依赖在一个项目的所有classpaths上均可用。
+
+- `provided`：这种依赖只在编译和测试的classpaths上可用。在运行时，则期望由JDK或容器来提供这些依赖。例如：Servlet API。
+
+- `runtime`：运行时依赖只在运行和测试的classpaths上可用，在编译时上是不可用的。例如：JDBC驱动。
+
+- `test`：测试时依赖只在测试的classpaths上可用。例如：JUnit。
+
+- `system`：（已废弃）与`provided`类似，但是，在运行时，必须使用`<systemPath>`来显式指定依赖的文件路径。
+
+  ```xml
+  <dependency>
+    <groupId>javax.sql</groupId>
+    <artifactId>jdbc-stdext</artifactId>
+    <version>2.0</version>
+    <scope>system</scope>
+    <systemPath>${java.home}/lib/rt.jar</systemPath>  <!--可以使用插值来访问环境变量
+  --></dependency>
+  ```
+
+- `import`：只能出现在`<dependencyManagement>`中的依赖配置中。这种依赖将被它自己POM的`<dependencyManagement>`中的依赖替换。
+
+## 依赖调解
+
+依赖调解用于解决依赖树中，同一工件存在多个版本的冲突。
+
+第一原则：离当前项目路径最近者优先。
+
+例如：存在 A -> B -> C -> D:2.0 和 A -> E -> D:1.0 两种依赖关系，则在构建 A 时 D:1.0 优先。
+
+第二原则：当路径距离相同时，依赖声明的顺序靠前者优先。
+
+## 可选依赖
+
+可选依赖不具有传递性。
+
+假设有：A -> B，B -> X（可选），B -> Y（可选）。则 A 的 classpath 中将不会包含 X 和 Y。如果希望在 A 的 classpath 中包含 X 或 Y，则需要在 A 的`pom.xml`中显式对 X 或 Y 进行依赖配置。
+
+```xml
+<project>
+  ...
+  <dependencies>
+    <!-- declare the dependency to be set as optional -->
+    <dependency>
+      <groupId>sample.ProjectX</groupId>
+      <artifactId>Project-X</artifactId>
+      <version>1.0</version>
+      <scope>compile</scope>
+      <optional>true</optional> <!-- value will be true or false only -->
+    </dependency>
+  </dependencies>
+  ...
+</project>
+```
+
+## 排除依赖
+
+排除依赖将不会包含在 classpath 中。
+
+```xml
+<project>
+  ...
+  <dependencies>
+    <dependency>
+      <groupId>sample.ProjectA</groupId>
+      <artifactId>Project-A</artifactId>
+      <version>1.0</version>
+      <scope>compile</scope>
+      <exclusions>
+        <exclusion>  <!-- declare the exclusion here -->
+          <groupId>sample.ProjectB</groupId>
+          <artifactId>Project-B</artifactId>
+        </exclusion>
+      </exclusions> 
+    </dependency>
+  </dependencies>
+  ...
+</project>
+```
+
+
+
+## 依赖管理
+
+项目X：
+
+```xml
+<project>
+ <modelVersion>4.0.0</modelVersion>
+ <groupId>maven</groupId>
+ <artifactId>X</artifactId>
+ <packaging>pom</packaging>
+ <name>X</name>
+ <version>1.0</version>
+ <dependencyManagement>
+   <dependencies>
+     <dependency>
+       <groupId>test</groupId>
+       <artifactId>a</artifactId>
+       <version>1.2</version>
+     </dependency>
+     <dependency>
+       <groupId>test</groupId>
+       <artifactId>b</artifactId>
+       <version>1.0</version>
+       <scope>compile</scope>
+     </dependency>
+     <dependency>
+       <groupId>test</groupId>
+       <artifactId>c</artifactId>
+       <version>1.0</version>
+       <scope>compile</scope>
+     </dependency>
+     <dependency>
+       <groupId>test</groupId>
+       <artifactId>d</artifactId>
+       <version>1.2</version>
+       <scope>test</scope>
+     </dependency>
+   </dependencies>
+ </dependencyManagement>
+</project>
+```
+
+项目Y：
+
+```xml
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <artifactId>X</artifactId>
+    <groupId>maven</groupId>
+    <version>1.0</version>
+  </parent>
+  <groupId>maven</groupId>
+  <artifactId>Y</artifactId>
+  <packaging>pom</packaging>
+  <name>Y</name>
+  <version>1.0</version>
+  <dependencyManagement>
+    <dependencies>
+      <dependency><!--改变了version，但保留了scope-->
+        <groupId>test</groupId>
+        <artifactId>d</artifactId>
+        <version>1.0</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  <dependencies>
+    <dependency><!--改变了version和scope-->
+      <groupId>test</groupId>
+      <artifactId>a</artifactId>
+      <version>1.0</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency><!--保留了version和scope-->
+      <groupId>test</groupId>
+      <artifactId>b</artifactId>
+    </dependency>
+    <dependency><!--改变了scope，但保留了version-->
+      <groupId>test</groupId>
+      <artifactId>c</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+  </dependencies>
+</project>
+```
+
+## 导入依赖
+
+项目Z：
+
+```xml
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>maven</groupId>
+  <artifactId>Z</artifactId>
+  <packaging>pom</packaging>
+  <name>Z</name>
+  <version>1.0</version>
+  <dependencyManagement>
+    <dependencies>
+      <dependency><!--导入依赖-->
+        <groupId>maven</groupId>
+        <artifactId>X</artifactId>
+        <version>1.0</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>test</groupId>
+        <artifactId>d</artifactId>
+        <version>1.0</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>test</groupId>
+      <artifactId>a</artifactId>
+      <version>1.0</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>test</groupId>
+      <artifactId>c</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+  </dependencies>
+</project>
+```
+
+项目X的`<dependencyManagement>`中的依赖将被合并到项目Z的`<dependencyManagement>`中，除了依赖 d，因为它在Z中也有定义。
+
+## 查看当前项目的依赖信息：
+
+以列表方式列出当前项目的所有依赖：
+
+```bash
+$ cd myproject
+$ mvn dependency:list
+```
+
+以树型方式列出当前项目的所有依赖：
+
+```bash
+$ cd myproject
+$ mvn dependency:tree
+```
+
+分析依赖关系（基于编译时信息，发现不了运行时依赖）：
+
+```bash
+$ cd myproject
+$ mvn dependency:analyze
+```
+
+ 
 
 # 构建项目
 
 ## 构建生命周期
 
-构建生命周期由构建阶段组成，它定义了一个项目在构建过程中经历的步骤。而构建阶段是由插件目标组成的（插件目标通过绑定到构建阶段，而构建阶段关联）。
+Maven的构建生命周期定义了一个项目在构建过程中经历的整个过程，它由许多构建阶段组成，这些构建阶段是有顺序的。而每个构建阶段可以与0个或任意多个插件目标绑定，并由插件目标来实现它的具体行为。在必要的时候，用户甚至可以创建自己的插件来定制构建行为。
 
 > 有些构建阶段，它们的名字是由连字符分隔的复合单词（例如：`pre-*`、`post-*`、`process-*`等等），它们通常不应该在命令行中直接调用。因为，它们要么产生对我们没用的中间结果，要么只是做了一些准备工作（例如：启动Tomcat）。直接调用这些阶段将导致某些被启动的服务没办法正常关闭。
 
@@ -523,12 +1426,16 @@ Maven中有三个内置的构建生命周期：default、clean和site。
 
 ### Clean生命周期
 
+Clean生命周期的目的是清理项目。
+
 | `pre-clean`  | execute processes needed prior to the actual project cleaning |
 | ------------ | ------------------------------------------------------------ |
 | `clean`      | remove all files generated by the previous build             |
 | `post-clean` | execute processes needed to finalize the project cleaning    |
 
 ### 默认生命周期
+
+默认生命周期的目的是构建项目。
 
 | `validate`                | validate the project is correct and all necessary information is available. |
 | ------------------------- | ------------------------------------------------------------ |
@@ -556,6 +1463,8 @@ Maven中有三个内置的构建生命周期：default、clean和site。
 | `deploy`                  | done in an integration or release environment, copies the final package to the remote repository for sharing with other developers and projects. |
 
 ### Site生命周期
+
+Site生命周期的目的是建立项目站点。
 
 | `pre-site`    | execute processes needed prior to the actual project site generation |
 | ------------- | ------------------------------------------------------------ |
@@ -668,17 +1577,579 @@ $ mvn -o package
 
 # 插件
 
-插件的主要作用就是为Maven提供插件目标。
+Maven实际上就是由一个核心引擎加上许多插件组成。核心引擎提供了基本的项目处理能力和构建管理，而插件负责执行实际的构建任务。
+
+在Maven中插件分为**构建插件**和**报告插件**：
+
+- 构建插件：在构建期间执行。它们应该在`<build><plugins/></build>`元素中配置；
+- 报告插件：在生成项目站点期间执行。它们应该在`<reporting><plugins/></reporting>`元素中配置。
 
 ## 插件目标
 
-插件目标代表一个具体的任务，它可以绑定到0个或任意多个构建阶段。
+插件由一个或多个Mojos组成，每个Mojo实现了一个具体的任务，并且它会映射到一个插件目标（通过`@goal`注解），而每个插件目标可以绑定到0个或任意多个构建阶段。用户可通过执行构建阶段或插件目标，来完成某些任务。
 
-没有与任何构建阶段绑定的插件目标，不属于任何构建生命周期，它们通常作为一个任务，通过Maven命令直接执行。
+没有与任何构建阶段绑定的插件目标，不属于任何构建生命周期，它们通常作为一个普通任务，通过Maven命令直接执行。
 
 当在一个项目中执行一个构建阶段时，其实是执行这个项目包含的插件（有些默认包含的插件是由`packaging`的设置决定的）中，与该构建阶段及在它之前的阶段绑定的插件目标。
 
 当多个插件目标绑定到同一个构建阶段时，它们的执行顺序是：首先执行与`packaging`相关的内置绑定目标，然后再按在POM中定义的插件的先后顺序依次执行对应目标。另外，可以使用`executions`元素来获得目标执行顺序的更多控制权。
+
+## 配置插件
+
+### 配置参数
+
+构建插件和报告插件都可以通过`<plugin><configuration/></plugin>`来配置参数（即Mojo类中的属性）。
+
+例如有一个Mojo类——`MyQueryMojo`：
+
+```java
+/**
+ * @goal query
+ */
+public class MyQueryMojo
+    extends AbstractMojo
+{
+    /**
+     * @parameter expression="${query.url}"
+     */
+    private String url;
+ 
+    /**
+     * @parameter default-value="60"
+     */
+    private int timeout;
+ 
+    /**
+     * @parameter
+     */
+    private String[] options;
+ 
+    public void execute()
+        throws MojoExecutionException
+    {
+        ...
+    }
+}
+```
+
+则在POM中可为该Mojo配置需要的URL、timeout和options：
+
+```xml
+<project>
+  ...
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-myquery-plugin</artifactId>
+        <version>1.0</version>
+        <configuration>
+          <url>http://www.foobar.com/query</url>
+          <timeout>10</timeout>
+          <options>
+            <option>one</option>
+            <option>two</option>
+            <option>three</option>
+          </options>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  ...
+</project>
+```
+
+> 在配置插件时，如果该插件是Maven官方插件（即`groupId`为`org.apache.maven.plugins`），则可以省略`groupId`。
+
+上面的`url`属性使用了`@parameter expression`注解，等号右边实际上是对一个系统属性`query.url`的引用。因此，`url`属性还可以通过系统属性`query.url`进行配置：
+
+```bash
+$ mvn myquery:query -Dquery.url=http://maven.apache.org
+```
+
+#### 配置对象参数
+
+```xml
+...
+<configuration>
+  <person implementation="com.mycompany.mojo.query.SuperPerson">
+    <firstName>Jason</firstName>
+    <lastName>van Zyl</lastName>
+  </person>
+</configuration>
+...
+```
+
+如果省略`implementation`，则默认为在当前Mojo所在包下面有一个`Person`类。
+
+#### 配置List参数
+
+Mojo：
+
+```java
+public class MyAnimalMojo
+    extends AbstractMojo
+{
+    /**
+     * @parameter
+     */
+    private List animals;
+ 
+    public void execute()
+        throws MojoExecutionException
+    {
+        ...
+    }
+}
+```
+
+POM：
+
+```xml
+<project>
+  ...
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-myanimal-plugin</artifactId>
+        <version>1.0</version>
+        <configuration>
+          <animals>
+            <animal>cat</animal>
+            <animal>dog</animal>
+            <animal>aardvark</animal>
+          </animals>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  ...
+</project>
+```
+
+当List没指定元素的类型时，它遵循如下策略：
+
+- 元素的XML标签包含一个`implementation`属性，用于指定元素的实现类；
+- 元素的XML标签名是一个类的完全限定名；
+- 元素的XML标签名是一个简单类名，该类必须与当前Mojo在同一个包下；
+- 如果元素没有子元素，则假定为`String`。
+
+#### 配置映射参数
+
+Mojo：
+
+```java
+...
+    /**
+     * My Map.
+     *
+     * @parameter
+     */
+    private Map myMap;
+...
+```
+
+POM：
+
+```xml
+...
+  <configuration>
+    <myMap>
+      <key1>value1</key1>
+      <key2>value2</key2>
+    </myMap>
+  </configuration>
+...
+```
+
+#### 配置`Properties`参数
+
+Mojo：
+
+```java
+...
+    /**
+     * My Properties.
+     *
+     * @parameter
+     */
+    private Properties myProperties;
+...
+```
+
+POM：
+
+```xml
+...
+  <configuration>
+    <myProperties>
+      <property>
+        <name>propertyName1</name>
+        <value>propertyValue1</value>
+      <property>
+      <property>
+        <name>propertyName2</name>
+        <value>propertyValue2</value>
+      <property>
+    </myProperties>
+  </configuration>
+...
+```
+
+### 构建插件专用配置
+
+#### 使用`<executions>`标签
+
+`<executions>`标签可用于将插件目标和目标参数，与某个构建阶段绑定在一起。
+
+`MyQueryMojo`：参见“配置参数”。
+
+`MyBindedQueryMojo`：（使用`@phase`注解指定默认绑定的构建阶段）
+
+```java
+/**
+ * @goal query2
+ * @phase package
+ */
+public class MyBindedQueryMojo
+    extends AbstractMojo
+{
+    /**
+     * @parameter expression="${query.url}"
+     */
+    private String url;
+ 
+    /**
+     * @parameter default-value="60"
+     */
+    private int timeout;
+ 
+    /**
+     * @parameter
+     */
+    private String[] options;
+ 
+    public void execute()
+        throws MojoExecutionException
+    {
+        ...
+    }
+}
+```
+
+POM：
+
+```xml
+<project>
+  ...
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-myquery-plugin</artifactId>
+        <version>1.0</version>
+        <executions>
+          <execution>
+            <id>execution1</id>
+            <phase>test</phase>
+            <configuration>
+              <url>http://www.foo.com/query</url>
+              <timeout>10</timeout>
+              <options>
+                <option>one</option>
+                <option>two</option>
+                <option>three</option>
+              </options>
+            </configuration>
+            <goals>
+              <goal>query</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>execution2</id>
+            <configuration>
+              <url>http://www.bar.com/query</url>
+              <timeout>15</timeout>
+              <options>
+                <option>four</option>
+                <option>five</option>
+                <option>six</option>
+              </options>
+            </configuration>
+            <goals>
+              <goal>query2</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+  ...
+</project>
+```
+
+`execution1`将插件目标`query`以及相关参数配置，与构建阶段`test`绑定。
+
+`execution2`没有显式指定绑定的构建阶段，则与Mojo中用注解配置的默认构建阶段绑定。假如也没有配置默认绑定的构建阶段，则该Execution永远不会被执行。如果`execution2`显式指定了绑定的构建阶段，则它将覆盖默认绑定的构建阶段。
+
+在同一个POM的同一个插件中，Execution的`id`必须是唯一的。而在POM的继承层次中，不同 POM的相同插件的Execution的`id`可以相同，这时相同`id`的Execution将被合并。通常将相同`id`的Execution的共同配置放到Profiles中。
+
+另外，同一个Mojo可以被多个Execution映射到不同的构建阶段。
+
+##### 直接执行Execution
+
+从Maven 3.3.1开始，可以使用Maven命令直接执行Execution：
+
+```bash
+$ mvn myqyeryplugin:queryMojo@execution1
+```
+
+#### 使用`<dependencies>`标签
+
+使用`<dependencies>`标签可以修改插件原来使用的依赖配置。
+
+```xml
+<project>
+  ...
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <version>1.2</version>
+        ...
+        <dependencies>
+          <dependency>
+            <groupId>org.apache.ant</groupId>
+            <artifactId>ant</artifactId>
+            <version>1.7.1</version>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.ant</groupId>
+            <artifactId>ant-launcher</artifactId>
+            <version>1.7.1</version>
+          </dependency>
+         </dependencies>
+      </plugin>
+    </plugins>
+  </build>
+  ...
+</project>
+```
+
+#### 使用`<inherited>`标签
+
+默认情况下，插件的配置会被子POM继承。如果要禁止被子POM继承，则可将该标签设置为`false`：
+
+```xml
+<project>
+  ...
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <version>1.2</version>
+        <inherited>false</inherited>
+        ...
+      </plugin>
+    </plugins>
+  </build>
+  ...
+</project>
+```
+
+
+
+### 报告插件专用配置
+
+以Site生命周期的构建阶段方式执行报告插件。例如：`mvn site`。则只会在`<reporting>`下找插件的配置信息。
+
+以插件目标方式直接执行的报告插件。例如：`mvn aplugin:areportgoal`。则首先会在`<reporting>`下找插件的配置信息。如果没找到，则会到`<build>`下找插件的配置信息。
+
+##### 使用`<reportSets>`有选择地生成报告内容
+
+`<reportSets>`用于指定生成的内容中要包含哪些报告。如果缺省`<reportSets>`，则表示生成内容包含所有报告。
+
+例如：只生成项目团队报告：
+
+```xml
+<project>
+  ...
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-project-info-reports-plugin</artifactId>
+        <version>2.1.2</version>
+        <reportSets>
+          <reportSet>
+            <reports>
+              <report>project-team</report>
+            </reports>
+          </reportSet>
+        </reportSets>
+      </plugin>
+    </plugins>
+  </reporting>
+  ...
+</project>
+```
+
+如果要排除所有报告，只需：
+
+```xml
+  <reportSets>
+    <reportSet>
+      <reports/>
+    </reportSet>
+  </reportSets>
+```
+
+#### 使用`<inherited>`标签
+
+类似于构建插件的情况，如果要禁止被子POM继承，则可将该标签设置为`false`：
+
+```xml
+<project>
+  ...
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-project-info-reports-plugin</artifactId>
+        <version>2.1.2</version>
+        <inherited>false</inherited>
+      </plugin>
+    </plugins>
+  </reporting>
+  ...
+</project>
+```
+
+## 插件前缀解析机制
+
+通过前面的介绍，我们知道可以在命令行中直接执行插件目标。例如：
+
+```bash
+$ mvn org.apache.maven.plugins:maven-dependency-plugin:2.8:tree
+$ mvn dependency:tree
+```
+
+上面两条命令的效果是一样的。区别在于：第一条命令采用“插件Maven坐标:插件目标”形式，而第二条命令采用“插件前缀:插件目标”形式。
+
+引入插件前缀的目的就是为了避免出现像第一条命令那样的繁琐输入。
+
+### 默认插件前缀
+
+Maven官方插件的`artifactId`如果是以`maven-xxx-plugin`模式命名的，则“xxx”部分自动成为插件前缀。
+
+第三方插件的`artifactId`如果是以`xxx-maven-plugin`模式命名的，则“xxx”部分自动成为插件前缀。
+
+### 通过`maven-plugin-plugin`指定插件前缀
+
+如果默认插件前缀满足不了你的需求，则可在插件的POM中，通过`maven-plugin-plugin`指定插件前缀：
+
+```xml
+<project>
+  ...
+  <build>
+    ...
+    <plugins>
+      ...
+      <plugin>
+        <artifactId>maven-plugin-plugin</artifactId>
+        <version>2.3</version>
+        <configuration>
+          ...
+          <goalPrefix>somePrefix</goalPrefix>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
+```
+
+这样，就可以使用该插件前缀执行插件目标了：
+
+```bash
+$ mvn somePrefix:goal
+```
+
+### 通过Maven元数据来配置插件前缀
+
+不管前面使用什么方法配置插件前缀，最终都是存储在Maven元数据中。
+
+在远程仓库中，Maven元数据存储在各`groupId`对应的目录下的`maven-metadata.xml`中。而在本地仓库中，则是存储在各`groupId`对应的目录下的`maven-metadata-${repoId}.xml`和`maven-metadata-local.xml中（因为本地仓库会对应多个远程仓库，以及本地仓库特有的私有工件）。
+
+例如：`maven-metadata-central.xml`：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <plugins>
+    <plugin>
+      <name>Apache Maven ACR Plugin</name>
+      <prefix>acr</prefix>
+      <artifactId>maven-acr-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Apache Maven Ant Plugin</name>
+      <prefix>ant</prefix>
+      <artifactId>maven-ant-plugin</artifactId>
+    </plugin>
+    ...
+  </plugins>
+</metadata>
+```
+
+### 配置插件查找的位置
+
+虽然插件目标与插件前缀的对应关系配置在Maven元数据中，而Maven元数据的位置与插件的`groupId`有关，但是在命令行中引用插件前缀时，如何定位到Maven元数据？总不能到所有的`groupId`下查找。
+
+默认情况下，Maven只会到`groupId`为**org.apache.maven.plugins**和**org.codehaus.mojo**对应的路径下查找插件前缀。如果需要查找其他`groupId`对应的路径，需要在`settings.xml`中配置：
+
+```xml
+<pluginGroups>
+  <pluginGroup>org.codehaus.modello</pluginGroup>
+</pluginGroups>
+```
+
+则，现在的查找顺序是：
+
+- org.codehaus.modello
+- org.apache.maven.plugins
+- org.codehaus.mojo
+
+## 获取插件帮助信息
+
+### 通过在线文档
+
+http://maven.apache.org/plugins/index.html#
+
+### 通过`maven-help-plugin`插件
+
+例如：
+
+```bash
+$ mvn help:describe -Dplugin=org.apache.maven.plugins:maven-compiler-plugin:3.7.0
+```
+
+### 通过插件目标`help`
+
+许多插件都有一个插件目标`help`，用来获取该插件的帮助信息：
+
+```bash
+$ mvn compiler:help -Ddetail -Dgoal=compile
+```
+
+
+
+## 插件管理
+
+插件管理使用`<build><pluginManagement /></build>`进行配置，作用与依赖管理类似。
+
+## 开发插件
+
+
 
 # Maven仓库
 
@@ -739,12 +2210,11 @@ $ mvn install
 
 ### 其他远程仓库
 
-其他远程仓库包括许多第三方的远程仓库，也包括自己搭建的私有仓库。要使用这些远程仓库，可在`pom.xml`中配置：
+其他远程仓库包括许多第三方的远程仓库，也包括自己搭建的私有仓库。要使用这些远程仓库，可在`pom.xml`或`settings.xml`中配置：
 
 ```xml
-<project>
   ...
-  <repositories>
+  <repositories>  <!--远程依赖仓库-->
     <repository>
       <id>maven2-repository.dev.java.net</id>
       <name>Java.net Repository for Maven</name>
@@ -760,8 +2230,22 @@ $ mvn install
       <layout>default</layout>
     </repository>
   </repositories>
+  <pluginRepositories>  <!--远程插件仓库-->
+  	<pluginRepository>
+    	<id>central</id>
+      <name>Maven Plugin Repository</name>
+      <url>http://repo1.maven.org/maven2</url>
+      <releases>
+      	<enabled>true</enabled>
+        <updatePolicy>never</updatePolicy>
+      </releases>
+      <snapshots>
+      	<enabled>false</enabled>
+      </snapshots>
+      <layout>default</layout>
+    </pluginRepository>
+  </pluginRepositories>
   ...
-</project>
 ```
 
 `updatePolicy`用来Maven从远程仓库检查更新的频率，默认值是`daily`，表示Maven每天检查一次。其它可用的选项包括：`never`——从不检查更新；`always`——每次构建都检查更新；`interval`——每隔X（任意整数）分钟检查一次更新。
@@ -1790,6 +3274,10 @@ $ mvn clean install -U
 ```
 
 
+
+# 项目站点
+
+# Maven与测试
 
 # 配置代理
 

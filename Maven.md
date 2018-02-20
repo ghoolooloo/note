@@ -1632,6 +1632,8 @@ public class MyQueryMojo
 }
 ```
 
+> 在Mojo上的注解，既可以是Java注解，也可以是Javadoc注解。
+
 则在POM中可为该Mojo配置需要的URL、timeout和options：
 
 ```xml
@@ -1666,7 +1668,87 @@ public class MyQueryMojo
 $ mvn myquery:query -Dquery.url=http://maven.apache.org
 ```
 
+#### 配置基本类型参数
+
+Mojo：
+
+```java
+@Parameter( property = "sayhi.greeting", defaultValue = "Hello World!" )
+private String greeting;
+
+@Parameter
+private boolean myBoolean;
+
+@Parameter
+private Integer myInteger;
+
+@Parameter
+private Double myDouble;
+
+@Parameter
+private Date myDate;
+
+@Parameter
+private File myFile;
+
+@Parameter
+private URL myURL
+```
+
+POM：
+
+```xml
+<configuration>
+  <greeting>Welcome</greeting>
+  <myBoolean>true</myBoolean>
+  <myInteger>10</myInteger>
+  <myDouble>1.0</myDouble>
+  <myDate>2005-10-06 2:22:55.1 PM</myDate>
+  <myFile>c:\temp</myFile>
+  <myURL>http://maven.apache.org</myURL>
+</configuration>
+```
+
+日期类型必须采用：yyyy-MM-dd HH:mm:ss.S a（例如：2005-10-06 2:22:55.1 PM）或yyyy-MM-dd HH:mm:ssa（例如：2005-10-06 2:22:55PM）格式。
+
+文件类型的路径如果是相对路径（不以`/`或盘符开头），则是相对于POM的路径。
+
+#### 配置枚举类型参数
+
+Mojo：
+
+```java
+public enum Color {
+  GREEN,
+  RED,
+  BLUE
+}
+
+
+@Parameter(defaultValue = "GREEN")
+private Color myColor;
+```
+
+POM：
+
+```xml
+<configuration>
+  <myColor>GREEN</myColor>
+</configuration>
+```
+
+
+
 #### 配置对象参数
+
+Mojo：
+
+```java
+@Parameter
+private SuperPerson jo;
+```
+
+POM：
 
 ```xml
 ...
@@ -1726,7 +1808,7 @@ POM：
 </project>
 ```
 
-当List没指定元素的类型时，它遵循如下策略：
+当List没指定元素的类型时，它遵循如下策略：（也适用于数组、May、Properties、对象）
 
 - 元素的XML标签包含一个`implementation`属性，用于指定元素的实现类；
 - 元素的XML标签名是一个类的完全限定名；
@@ -2149,7 +2231,529 @@ $ mvn compiler:help -Ddetail -Dgoal=compile
 
 ## 开发插件
 
+开发插件其实就是开发Mojo，它具体实现了插件目标。Mojo实际上就是标注了`@Mojo` Java注解或`goal` Javadoc注解，并实现了 [`org.apache.maven.plugin.Mojo`](http://maven.apache.org/ref/current/maven-plugin-api/apidocs/org/apache/maven/plugin/Mojo.html)接口的Java类。
 
+一个Maven插件，只要它包含构建Mojo，就可以用作构建插件；同样，只要包含报告Mojo，就可以用作报告插件。同一个Maven插件，可以同时包含多个构建Mojos和多个报告Mojos
+
+### 生成插件项目
+
+可以使用Mojo archetype来创建一个插件项目：
+
+```bash
+$ mvn archetype:generate \
+  -DgroupId=sample.plugin \
+  -DartifactId=hello-maven-plugin \
+  -DarchetypeGroupId=org.apache.maven.archetypes \
+  -DarchetypeArtifactId=maven-archetype-plugin
+```
+
+### 插件项目的POM
+
+#### 构建插件POM
+
+```xml
+<project>
+  <modelVersion>4.0.0</modelVersion>
+ 
+  <groupId>sample.plugin</groupId>
+  <artifactId>hello-maven-plugin</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <packaging>maven-plugin</packaging>  <!--插件项目的packaging-->
+ 
+  <name>Sample Parameter-less Maven Plugin</name>
+ 
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-plugin-api</artifactId>
+      <version>3.0</version>
+    </dependency>
+ 
+    <!-- dependencies to annotations -->
+    <dependency>
+      <groupId>org.apache.maven.plugin-tools</groupId>
+      <artifactId>maven-plugin-annotations</artifactId>
+      <version>3.4</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+</project>
+```
+
+根据插件命名规范：只有Maven官方插件才能使用 `maven-<yourplugin>-plugin`模式的`artifactId`，非官方插件只能使用 `<yourplugin>-maven-plugin`模式的`artifactId`。
+
+#### 报告插件POM
+
+报告插件POM与构建插件POM区别在于依赖不同：
+
+```xml
+<project xmlns="http://maven.apache.org/POM/4.0.0" 
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.mycompany.maven</groupId>
+  <artifactId>simple-maven-plugin</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <packaging>maven-plugin</packaging>
+  <name>Simple Plugin</name>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+ 
+  <dependencies>
+    <!-- reporting API -->
+    <dependency>
+      <groupId>org.apache.maven.reporting</groupId>
+      <artifactId>maven-reporting-impl</artifactId>
+      <version>3.0.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.reporting</groupId>
+      <artifactId>maven-reporting-api</artifactId>
+      <version>3.0</version>
+    </dependency>
+
+    <!-- plugin API and plugin-tools -->
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-plugin-api</artifactId>
+      <version>3.5.2</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.plugin-tools</groupId>
+      <artifactId>maven-plugin-annotations</artifactId>
+      <version>3.5</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.shared</groupId>
+      <artifactId>maven-shared-utils</artifactId>
+      <version>3.2.0</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.7.0</version>
+      </plugin>
+      <plugin>
+        <artifactId>maven-install-plugin</artifactId>
+        <version>2.5.2</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-plugin-plugin</artifactId>
+        <version>3.5.1</version>
+        <configuration>
+          <goalPrefix>simple</goalPrefix>
+        </configuration>
+        <executions>
+          <execution>
+            <id>default-descriptor</id>
+            <phase>process-classes</phase>
+          </execution>
+          <execution>  <!--自动生成help目标-->
+            <id>generated-helpmojo</id>
+            <goals>
+              <goal>helpmojo</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
+```
+
+
+
+### 编写Mojo
+
+#### 编写构建Mojo
+
+构建插件的目标由构建Mojo实现，而构建Mojo一般继承自`AbstractMojo`抽象类。
+
+```java
+package sample.plugin;
+ 
+import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugins.annotations.Mojo;
+ 
+/**
+ * Says "Hi" to the user.
+ *
+ */
+@Mojo(name = "sayhi")  //“sayhi”就是插件目标
+public class GreetingMojo extends AbstractMojo
+{
+    public void execute() throws MojoExecutionException
+    {
+        getLog().info( "Hello, world." );
+    }
+}
+```
+
+可以两种注解来标注Mojo：`@Mojo` Java注解或`goal` Javadoc注解。
+
+`execute()`方法允许抛出两种异常：
+
+- `org.apache.maven.plugin.MojoExecutionException` ：当没有预料的问题出现抛出。它导致“BUILD ERROR”出现。
+- `org.apache.maven.plugin.MojoFailureException`：当期望的问题出现时抛出。它导致“BUILD FAILURE”出现。
+
+
+#### 编写报告Mojo
+
+报告插件的目标由报告Mojo实现，而报告Mojo必须实现`Mojo`和`MavenReport`接口。通常，编写报告 Mojo一般继承自`AbstractMavenReport`抽象类（它也是`AbstractMojo`的子类）。
+
+```java
+package com.mycompany.maven;
+
+import java.util.Locale;
+
+import org.apache.maven.doxia.sink.Sink;
+import org.apache.maven.plugin.logging.Log;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.apache.maven.project.MavenProject;
+import org.apache.maven.reporting.AbstractMavenReport;
+import org.apache.maven.reporting.MavenReportException;
+
+/**
+ * Builds an simple report page as an example.
+ *
+ * <p>
+ * This example show how easy it is to build your own reporting plugin
+ * (or, for that matter, your own reporting Mojo)
+ *
+ */
+@Mojo(
+  name = "simple",
+  defaultPhase = LifecyclePhase.SITE,  //必须要绑定到“site”阶段
+  requiresDependencyResolution = ResolutionScope.RUNTIME,
+  requiresProject = true,
+  threadSafe = true
+)
+public class SimpleReport extends AbstractMavenReport {
+
+  public String getOutputName() {
+    // This report will generate simple-report.html when invoked in a project with `mvn site`
+    return "simple-report";
+  }
+
+  public String getName(Locale locale) {
+    // Name of the report when listed in the project-reports.html page of a project
+    return "Simple Report";
+  }
+
+  public String getDescription(Locale locale) {
+    // Description of the report when listed in the project-reports.html page of a project
+    return "This simple report is a very simple report that does nothing but "
+      + "shows off Maven's wonderful reporting capabilities.";
+  }
+
+  /**
+   * Practical reference to the Maven project
+   */
+  @Parameter(defaultValue = "${project}", readonly = true)
+  private MavenProject project;
+
+  @Override
+  protected void executeReport(Locale locale) throws MavenReportException {
+
+    // Get the logger
+    Log logger = getLog();
+
+    // Some info
+    logger.info("Generating " + getOutputName() + ".html"
+                + " for " + project.getName() + " " + project.getVersion());
+
+    // Get the Maven Doxia Sink, which will be used to generate the
+    // various elements of the document
+    Sink mainSink = getSink();
+    if (mainSink == null) {
+      throw new MavenReportException("Could not get the Doxia sink");
+    }
+
+    // Page title
+    mainSink.head();
+    mainSink.title();
+    mainSink.text("Simple Report for " + project.getName() + " " + project.getVersion());
+    mainSink.title_();
+    mainSink.head_();
+
+    mainSink.body();
+
+    // Heading 1
+    mainSink.section1();
+    mainSink.sectionTitle1();
+    mainSink.text("Simple Report for " + project.getName() + " " + project.getVersion());
+    mainSink.sectionTitle1_();
+
+    // Content
+    mainSink.paragraph();
+    mainSink.text("This page provides simple information, like its location: ");
+    mainSink.text(project.getBasedir().getAbsolutePath());
+    mainSink.paragraph_();
+
+    // Close
+    mainSink.section1_();
+    mainSink.body_();
+  }
+}
+```
+
+
+
+#### Mojo Javadoc注解
+
+```java
+import org.apache.maven.execution.MavenSession;
+import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.MojoExecution;
+import org.apache.maven.plugin.descriptor.PluginDescriptor;
+import org.apache.maven.project.MavenProject;
+import org.apache.maven.settings.Settings;
+ 
+/**
+ * Mojo Description: goal is the only required annotation.
+ *
+ * @goal <goalName>
+ * @aggregator
+ * @configurator <roleHint>
+ * @execute phase="<phaseName>" lifecycle="<lifecycleId>" goal="<goalName>"
+ * @executionStrategy <once-per-session|always>
+ * @inheritByDefault <true|false>
+ * @instantiationStrategy <per-lookup|singleton|keep-alive|poolable>
+ * @phase <phaseName>
+ * @requiresDependencyResolution <compile|runtime|compile+runtime|test>
+ * @requiresDependencyCollection <compile|runtime|compile+runtime|test> (since Maven 3.0)
+ * @requiresDirectInvocation <false|true>
+ * @requiresOnline <false|true>
+ * @requiresProject <true|false>
+ * @requiresReports <false|true> (unsupported since Maven 3.0)
+ * @threadSafe (since Maven 3.0)
+ * @since <since-text>
+ * @deprecated <deprecated-text>
+ */
+public class MyMojo
+    extends AbstractMojo
+{
+    /**
+     * @parameter name="parameter" alias="myAlias" implementation="" property="aProperty" default-value="${anExpression}"
+     * @readonly
+     * @required
+     * @since <since-text>
+     * @deprecated <deprecated-text>
+     */
+    private String parameter;
+ 
+    /**
+     * @component role="..." roleHint="..."
+     */
+    private Component component;
+ 
+    // sample objects taken from Maven API through PluginParameterExpressionEvaluator
+ 
+    /**
+     * @parameter default-value="${session}"
+     * @readonly
+     */
+    private MavenSession session;
+ 
+    /**
+     * @parameter default-value="${project}"
+     * @readonly
+     */
+    private MavenProject project;
+ 
+    /**
+     * @parameter default-value="${mojoExecution}"
+     * @readonly
+     */
+    private MojoExecution mojo;
+ 
+    /**
+     * @parameter default-value="${plugin}" // Maven 3 only
+     * @readonly
+     */
+    private PluginDescriptor plugin;
+ 
+    /**
+     * @parameter default-value="${settings}"
+     * @readonly
+     */
+    private Settings settings;
+ 
+    /**
+    * @parameter default-value="${project.basedir}"
+    * @readonly
+    */
+    private File basedir;
+ 
+    /**
+    * @parameter default-value="${project.build.directory}"
+    * @readonly
+    */
+    private File target;
+ 
+    public void execute()
+    {
+        ...
+    }
+}
+```
+
+> 从Maven 3.0开始，`@parameter`的`expression="${aProperty}"`可替换为`property="aProperty"`。
+
+#### Mojo Java注解
+
+```java
+import org.apache.maven.execution.MavenSession;
+import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.MojoExecution;
+import org.apache.maven.plugin.descriptor.PluginDescriptor;
+import org.apache.maven.plugins.annotations.Component;
+import org.apache.maven.plugins.annotations.Execute;
+import org.apache.maven.plugins.annotations.InstantiationStrategy;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.apache.maven.project.MavenProject;
+import org.apache.maven.settings.Settings;
+ 
+/**
+ * Mojo Description. @Mojo( name = "<goal-name>" ) is the minimal required annotation.
+ * @since <since-text>
+ * @deprecated <deprecated-text>
+ */
+@Mojo( name = "<goal-name>",
+       aggregator = <false|true>, 
+       configurator = "<role hint>",
+       executionStrategy = "<once-per-session|always>",
+       inheritByDefault = <true|false>,
+       instantiationStrategy = InstantiationStrategy.<strategy>,
+       defaultPhase = LifecyclePhase.<phase>,
+       requiresDependencyResolution = ResolutionScope.<scope>,
+       requiresDependencyCollection = ResolutionScope.<scope>, // (since Maven 3.0)
+       requiresDirectInvocation = <false|true>,
+       requiresOnline = <false|true>,
+       requiresProject = <true|false>,
+       requiresReports = <false|true>, // (unsupported since Maven 3.0)
+       threadSafe = <false|true> ) // (since Maven 3.0)
+@Execute( goal = "<goal-name>",
+          phase = LifecyclePhase.<phase>,
+          lifecycle = "<lifecycle-id>" )
+public class MyMojo
+    extends AbstractMojo
+{
+    /**
+     * @since <since-text>
+     * @deprecated <deprecated-text>
+     */
+    @Parameter( name = "parameter",
+                alias = "myAlias",
+                property = "a.property",
+                defaultValue = "an expression, possibly with ${variables}",
+                readonly = <false|true>,
+                required = <false|true> )
+    private String parameter;
+ 
+    @Component( role = MyComponentExtension.class,
+                hint = "..." )
+    private MyComponent component;
+ 
+    // sample objects taken from Maven API through PluginParameterExpressionEvaluator
+ 
+    @Parameter( defaultValue = "${session}", readonly = true )
+    private MavenSession session;
+ 
+    @Parameter( defaultValue = "${project}", readonly = true )
+    private MavenProject project;
+ 
+    @Parameter( defaultValue = "${mojoExecution}", readonly = true )
+    private MojoExecution mojo;
+ 
+    @Parameter( defaultValue = "${plugin}", readonly = true ) // Maven 3 only
+    private PluginDescriptor plugin;
+ 
+    @Parameter( defaultValue = "${settings}", readonly = true )
+    private Settings settings;
+ 
+    @Parameter( defaultValue = "${project.basedir}", readonly = true )
+    private File basedir;
+ 
+    @Parameter( defaultValue = "${project.build.directory}", readonly = true )
+    private File target;
+ 
+    public void execute()
+    {
+        ...
+    }
+}
+```
+
+
+
+### 使用插件
+
+在要使用该插件的项目上配置：
+
+```xml
+...
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>sample.plugin</groupId>
+        <artifactId>hello-maven-plugin</artifactId>
+        <version>1.0-SNAPSHOT</version>
+        <executions>
+          <execution>
+            <phase>compile</phase>
+            <goals>
+              <goal>sayhi</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>com.mycompany.maven</groupId>
+        <artifactId>simple-maven-plugin</artifactId>
+        <version>1.0-SNAPSHOT</version>
+      </plugin>
+    </plugins>
+  </reporting>
+...
+```
+
+运行构建目标：
+
+```bash
+$ mvn sample.plugin:hello-maven-plugin:1.0-SNAPSHOT:sayhi
+$ mvn sample.plugin:hello-maven-plugin:sayhi   （使用插件的最新版本）
+$ mvn hello:sayhi  （使用插件前缀）
+```
+
+运行报告目标：
+
+```bash
+$ mvn site
+```
+
+上面的命令实际上是调用 [`maven-site-plugin`](http://maven.apache.org/plugins/maven-site-plugin/)插件，它将加载我们的`simple-maven-plugin`插件。
+
+然后，调用每个报告Mojos的`generate()`方法。`generate()`方法通过Maven的 [Doxia Sink AP](http://maven.apache.org/doxia/doxia/doxia-sink-api/)来生成文档。这些文档被传到Doxia去产生一个HTML的站点，并输出到`target/site`目录下。
 
 # Maven仓库
 
@@ -3257,6 +3861,81 @@ app
 
 # Archetype
 
+Archetype可以理解成Maven项目的模板，它是通过`maven-archetype-plugin`插件来实现的。
+
+## 开发Archetype
+
+### 创建一个Maven项目的骨架
+
+按照正常的方式创建一个Maven项目，这个项目包含了自己希望在项目骨架上出现的东西。
+
+自定义的Archetype的Maven坐标就是该项目的Maven坐标——定义在POM中：
+
+`pom.xml`：
+
+```xml
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+ 
+  <groupId>my.groupId</groupId>
+  <artifactId>my-archetype-id</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+</project>
+```
+
+### 创建Archetype描述符
+
+在`src/main/resources/META-INF/maven/`目录下创建`archetype.xml`——Archetype描述符。它列出将被包含在该Archetype中的所有文件，并且对该Archetype进行分类，以便Archetype生成机制正确处理。
+
+`archetype.xml`：
+
+```xml
+<archetype xmlns="http://maven.apache.org/plugins/maven-archetype-plugin/archetype/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/plugins/maven-archetype-plugin/archetype/1.0.0 http://maven.apache.org/xsd/archetype-1.0.0.xsd">
+  <id>my-archetype-id</id>
+  <sources>
+    <source>src/main/java/App.java</source>
+  </sources>
+  <testSources>
+    <source>src/test/java/AppTest.java</source>
+  </testSources>
+</archetype>
+```
+
+`<id>`的值应该与`pom.xml`中的`artifactId`相同。
+
+### 生成项目骨架
+
+交互式生成项目骨架的命令是：
+
+```bash
+$ mvn archetype:generate
+```
+
+批处理式生成项目骨架的命令是：
+
+```bash
+$ mvn archetype:generate -DarchetypeGroupId=org.apache.maven.archetypes -DarchetypeArtifactId=maven-archetype-site -DarchetypeVersion=1.2-SNAPSHOT
+```
+
+## 常用Archetype
+
+| Archetype ArtifactIds                                        | Description                                                  |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| [maven-archetype-archetype](http://maven.apache.org/archetypes/maven-archetype-archetype/) | An archetype to generate a sample archetype.                 |
+| [maven-archetype-j2ee-simple](http://maven.apache.org/archetypes/maven-archetype-j2ee-simple/) | An archetype to generate a simplifed sample J2EE application. |
+| maven-archetype-mojo (deprecated)                            | Deprecated in favour of maven-archetype-plugin, which has a better name. |
+| [maven-archetype-plugin](http://maven.apache.org/archetypes/maven-archetype-plugin/) | An archetype to generate a sample Maven plugin.              |
+| [maven-archetype-plugin-site](http://maven.apache.org/archetypes/maven-archetype-plugin-site/) | An archetype to generate a sample Maven plugin site.         |
+| [maven-archetype-portlet](http://maven.apache.org/archetypes/maven-archetype-portlet/) | An archetype to generate a sample JSR-268 Portlet.           |
+| [maven-archetype-quickstart](http://maven.apache.org/archetypes/maven-archetype-quickstart/) | An archetype to generate a sample Maven project.             |
+| [maven-archetype-simple](http://maven.apache.org/archetypes/maven-archetype-simple/) | An archetype to generate a simple Maven project.             |
+| [maven-archetype-site](http://maven.apache.org/archetypes/maven-archetype-site/) | An archetype to generate a sample Maven site which demonstrates some of the supported document types like APT, XDoc, and FML and demonstrates how to i18n your site. |
+| [maven-archetype-site-simple](http://maven.apache.org/archetypes/maven-archetype-site-simple/) | An archetype to generate a sample Maven site.                |
+| [maven-archetype-webapp](http://maven.apache.org/archetypes/maven-archetype-webapp/) | An archetype to generate a sample Maven Webapp project.      |
+
 # 版本管理
 
 ## 什么是`SNAPSHOT`版本
@@ -3276,6 +3955,280 @@ $ mvn clean install -U
 
 
 # 项目站点
+
+## 自定义站点外观
+
+用户不仅能使用大量的报告插件生成项目站点，而且还可以自定义站点的布局和外观。
+
+要自定义站点外观，需要在`src/site`目录下创建一个站点描述符文件——`site.xml`，以及为每种输出文档类型创建的子目录和一个资源文件夹：
+
+```
++- src/
+   +- site/
+      +- apt/  （Wiki风格）
+      |  +- index.apt
+      !
+      +- markdown/
+      |  +- index.md
+      |
+      +- xdoc/
+      |  +- other.xml
+      |
+      +- fml/  （FAQ风格）
+      |  +- general.fml
+      |  +- faq.fml
+      |
+      +- resources/
+      |  +- css/
+      |  |  +- site.css
+      |  |
+      |  +- images/
+      |     +- pic1.jpg
+      +- site.xml
+```
+
+> 在站点的任何页面可以使用相对路径（总是相对于`images`目录，例如：`images/pic1.jpg`）来访问`images`中的图片。
+
+## 站点描述符
+
+`site.xml`：
+
+```xml
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<project name="Maven">  <!--name属性将作为页面的title元素值-->
+  <skin>  <!--使用第三方皮肤-->
+  	<groupId>com.googlecode.fluido-skin</groupId>
+    <artifactId>fluido-skin</artifactId>
+    <version>1.3</version>
+  </skin>
+  <bannerLeft>
+    <name>Maven</name>
+    <src>http://maven.apache.org/images/apache-maven-project.png</src>
+    <href>http://maven.apache.org/</href>
+  </bannerLeft>
+  <bannerRight>
+    <src>http://maven.apache.org/images/maven-small.gif</src>
+  </bannerRight>
+  <body>
+    <links>
+      <item name="Apache" href="http://www.apache.org/" />
+      <item name="Maven 1.x" href="http://maven.apache.org/maven-1.x/"/>
+      <item name="Maven 2" href="http://maven.apache.org/"/>
+    </links>
+
+    <menu name="Maven 2.0">
+      <item name="Introduction" href="index.html"/>
+      <item name="Download" href="download.html"/>
+      <item name="Release Notes" href="release-notes.html" />
+      <item name="General Information" href="about.html"/>
+      <item name="For Maven 1.x Users" href="maven1.html"/>
+      <item name="Road Map" href="roadmap.html" />
+    </menu>
+
+    <menu ref="reports"/>
+
+    ...
+  </body>
+</project>
+```
+
+## 国际化
+
+首先，为每种支持的语言添加一个站点描述符和相应的各输出文档类型目录，例如法语的站点描述符：`site_fr.xml`：
+
+```
++- src/
+   +- site/
+      +- apt/
+      |  +- index.apt     (Default version)
+      |  `- format.apt
+      |- fml
+      |   `- faq.fml
+      |- xdoc
+      |   `- xdoc.xml
+      +- fr/
+      |  +- apt/
+      |  |  +- index.apt  (French version)
+      |  |  `- format.apt
+      |  |- fml
+      |  |  `- faq.fml
+      |  |- xdoc
+      |  |  `- xdoc.xml
+      |
+      +- site.xml         (Default site descriptor)
+      +- site_fr.xml      (French site descriptor)
+```
+
+然后，在POM中配置`maven-site-plugin`以启用支持的语言：
+
+```xml
+<project>
+  ...
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-site-plugin</artifactId>
+        <version>3.4</version>
+        <configuration>
+          <locales>en,fr</locales>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  ...
+</project>
+```
+
+另外，最好使用UTF-8编码来读取源码和呈现站点。在`pom.xml`中配置如下：
+
+```xml
+<properties>
+	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+</properties>
+```
+
+
+
+## 部署站点
+
+使用`mvn site`生成站点后，可以通过Maven将站点部署到远程服务器。Maven支持多种协议部署站点，包括：FTP、SCP、DAV。
+
+### SCP
+
+`pom.xml`：
+
+```xml
+<project>
+  ...
+  <distributionManagement>
+    <site>
+      <id>website</id>
+      <url>scp://www.mycompany.com/www/docs/project/</url>
+    </site>
+  </distributionManagement>
+  ...
+</project>
+```
+
+在`settings.xml`中配置认证信息：
+
+```xml
+<settings>
+	...
+  <servers>
+  	<server>
+      <id>website</id>
+      <passphrase>somepassphrase</passphrase>
+      <privateKey>c:/sshkeys/id_rsa</privateKey>
+    </server>
+  </servers>
+  ...
+</settings>
+```
+
+### DAV
+
+`pom.xml`：
+
+```xml
+<project>
+  ...
+  <distributionManagement>
+    <site>
+      <id>website</id>
+      <url>dav:https://www.mycompany.com/www/docs/project/</url>
+    </site>
+  </distributionManagement>
+  ...
+</project>
+```
+
+`settings.xml`：
+
+```xml
+<settings>
+	...
+  <servers>
+  	<server>
+      <id>website</id>
+      <username>jo</username>
+      <password>123456</password>
+    </server>
+  </servers>
+  ...
+</settings>
+```
+
+### FTP
+
+使用FTP协议需要额外配置`wagon-ftp`扩展组件。
+
+`pom.xml`：
+
+```xml
+<project>
+  ...
+  <distributionManagement>
+    <site>
+      <id>website</id>
+      <url>ftp://www.mycompany.com/www/docs/project/</url>
+    </site>
+  </distributionManagement>
+  <build>
+  	...
+    <extensions>
+    	<extension>
+      	<groupId>org.apache.maven.wagon</groupId>
+        <artifactId>wagon-ftp</artifactId>
+        <version>1.0</version>
+      </extension>
+    </extensions>
+  </build>
+  ...
+</project>
+```
+
+`settings.xml`：
+
+```xml
+<settings>
+	...
+  <servers>
+  	<server>
+      <id>website</id>
+      <username>jo</username>
+      <password>123456</password>
+    </server>
+  </servers>
+  ...
+</settings>
+```
+
+### 运行部署命令
+
+```bash
+$ mvn site-deploy
+```
+
+
+
+## 常用的报告插件
+
+maven-project-info-reports-plugin：生成项目站点。
+
+maven-javadoc-plugin：生成Javadoc。
+
+maven-jxr-plugin：在浏览器中浏览项目源代码。
+
+maven-checkstyle-plugin：自动检查Java代码是否遵循编码规范。
+
+maven-pmd-plugin：Java源码分析。
+
+maven-changelog-plugin：基于版本控制系统生成变更报告。
+
+cobertura-maven-plugin：生成测试覆盖率报告。
 
 # Maven与测试
 

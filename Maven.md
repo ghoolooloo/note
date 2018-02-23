@@ -3865,11 +3865,9 @@ Archetype可以理解成Maven项目的模板，它是通过`maven-archetype-plug
 
 ## 开发Archetype
 
-### 创建一个Maven项目的骨架
+### 创建一个Archetype项目
 
-按照正常的方式创建一个Maven项目，这个项目包含了自己希望在项目骨架上出现的东西。
-
-自定义的Archetype的Maven坐标就是该项目的Maven坐标——定义在POM中：
+按照正常的方式创建一个Maven项目，并且在项目POM上定义Archetype的Maven坐标：
 
 `pom.xml`：
 
@@ -3887,9 +3885,11 @@ Archetype可以理解成Maven项目的模板，它是通过`maven-archetype-plug
 
 ### 创建Archetype描述符
 
-在`src/main/resources/META-INF/maven/`目录下创建`archetype.xml`——Archetype描述符。它列出将被包含在该Archetype中的所有文件，并且对该Archetype进行分类，以便Archetype生成机制正确处理。
+Archetype描述符列出将被包含在该Archetype生成的原型中的所有文件，以及它使用哪些属性。
 
-`archetype.xml`：
+在Maven 1.x 中，Archetype描述符是`src/main/resources/META-INF/maven/archetype.xml`，而在Maven 2.x开始则是`src/main/resources/META-INF/maven/archetype-metadata.xml`。两种完全不同。
+
+`archetype.xml`：（Maven 1.x）
 
 ```xml
 <archetype xmlns="http://maven.apache.org/plugins/maven-archetype-plugin/archetype/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -3906,19 +3906,229 @@ Archetype可以理解成Maven项目的模板，它是通过`maven-archetype-plug
 
 `<id>`的值应该与`pom.xml`中的`artifactId`相同。
 
-### 生成项目骨架
+`<allowPartial>true</allowPartial>`允许在已经存在的项目上执行`archetype:generate`。
 
-交互式生成项目骨架的命令是：
+> `<source>`和`<resource>`中只能指定文件，而不能是目录。
+
+`archetype-metadata.xml`：（Maven 2.x）
+
+```xml
+<archetype-descriptor xmlns="http://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.0.0" 
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.0.0 http://maven.apache.org/xsd/archetype-descriptor-1.0.0.xsd"
+  name="my-archetype">
+  <requiredProperties>
+    <requiredProperty key="port" />
+    <requiredProperty key="groupId">
+      <defaultValue>com.mycompany</defaultValue>
+    </requiredProperty>
+  </requiredProperties>
+ 
+  <fileSets>
+    <fileSet filtered="true" packaged="true">
+      <directory>src/main/java</directory>
+      <includes>
+      	<include>**/*.java</include>
+      </includes>
+    </fileSet>
+    <fileSet filtered="true" packaged="true">
+      <directory>src/test/java</directory>
+      <includes>
+      	<include>**/*.java</include>
+      </includes>
+    </fileSet>
+    <fileSet filtered="true" packaged="false">
+      <directory>src/main/resources</directory>
+      <includes>
+      	<include>**/*.properties</include>
+      </includes>
+    </fileSet>
+  </fileSets>
+</archetype-descriptor>
+```
+
+`packaged`表示是否将该目录下的内容放到生成项目的`package`参数指定路径下。
+
+`filtered`表示是否允许使用插值。这样在模板类中就可以使用插值了，例如：
+
+`App.java`：
+
+```java
+package ${package};
+
+public class App {
+  ...
+}
+```
+
+`**`和`*`都可以匹配0个或任意多个字符，但`*`不能匹配路径分隔符。
+
+`requiredProperties`定义的属性，可出现在`filtered="true"`的文件的插值中（例如：`${port}`）。还可以为系统属性设置默认值，例如上面的`groupId`。
+
+### 创建原型的文件和`pom.xml`
+
+希望在项目原型上出现的东西，全部放到`src/main/resources/archetype-resources/`下。
+
+原型项目的`pom.xml`：
+
+```xml
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+ 
+  <groupId>${groupId}</groupId>
+  <artifactId>${artifactId}</artifactId>
+  <version>${version}</version>
+  <packaging>jar</packaging>
+ 
+  <name>A custom project</name>
+  <url>http://www.myorganization.org</url>
+ 
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>3.8.1</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>
+```
+
+> 注意： `artifactId` 、 `groupId`和`version`的值不是固定的，而是使用插值。它们来自`archetype:generate`命令行的参数。
+
+### Archetype的项目结构
+
+```
+archetype
+|-- pom.xml
+`-- src
+    `-- main
+        `-- resources
+            |-- META-INF
+            |   `-- maven
+            |       `--archetype.xml
+            `-- archetype-resources
+                |-- pom.xml
+                `-- src
+                    |-- main
+                    |   `-- java
+                    |       `-- App.java  （不需要创建完整的包路径）
+                    `-- test
+                        `-- java
+                            `-- AppTest.java
+```
+
+### 构建和部署Archetype
+
+与普通Maven项目完全一样。
+
+### 使用Archetype生成项目原型
+
+使用Archetype生成项目原型：
+
+```bash
+$ mvn archetype:generate -DarchetypeGroupId=my.groupId -DarchetypeArtifactId=my-archetype-id -DarchetypeVersion=1.0-SNAPSHOT -DgroupId=<my-groupid> -Dpackage=<my-toppackage> -Dport=8080
+```
+
+在执行`archetype:generate`时，如果参数不完整，则会出现交互式提示，以完成未指定参数的设置。例如：
 
 ```bash
 $ mvn archetype:generate
 ```
 
-批处理式生成项目骨架的命令是：
+## Archetype描述符
+
+`archetype-metadata.xml`：（Maven 2.x）
+
+```xml
+<archetype-descriptor xmlns="http://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.0.0" 
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.0.0 http://maven.apache.org/xsd/archetype-descriptor-1.0.0.xsd"
+  name=.. partial=.. >
+  <requiredProperties>
+    <requiredProperty key=.. >
+      <defaultValue/>
+      <validationRegex/>
+    </requiredProperty>
+  </requiredProperties>
+ 
+  <fileSets>
+    <fileSet filtered=.. packaged=.. encoding=.. >
+      <directory/>
+      <includes/>
+      <excludes/>
+    </fileSet>
+  </fileSets>
+ 
+  <modules>
+    <module id=.. dir=.. name=.. >
+ 
+      <fileSets>
+        <fileSet filtered=.. packaged=.. encoding=.. >
+          <directory/>
+          <includes/>
+          <excludes/>
+        </fileSet>
+      </fileSets>
+ 
+      <modules>
+        <module>...recursion...<module>
+      </modules>
+    </module>
+  </modules>
+</archetype-descriptor>
+```
+
+## Archetype Catalog
+
+当用户以不指定Archetype坐标的方式使用`maven-archetype-plugin`的时候，会得到一个Archetype列表供选择。这个列表信息来源于`archetype-catalog.xml`文件。
+
+`archetype-catalog.xml`文件可以通过Maven命令行参数`-DarchetypeCatalog`来指定，可以指定多个Catalog，使用逗号分隔：
 
 ```bash
-$ mvn archetype:generate -DarchetypeGroupId=org.apache.maven.archetypes -DarchetypeArtifactId=maven-archetype-site -DarchetypeVersion=1.2-SNAPSHOT
+$ mvn archetype:generate -DarchetypeCatalog=file:///tmp/archetype-catalog.xml,local
 ```
+
+如果没有指定，则默认为：“remote,local”。
+
+`-DarchetypeCatalog`可以指定为：
+
+- `internal`：表示`maven-archetype-plugin`内置的Archetype Catalog，约有58个；
+- `local`：表示用户本地的Archetype Catalog，其位置为`~/.m2/archetype-catalog.xml`（默认不存在，要自己创建）；
+- `remote`：表示 Maven中央仓库的Archetype Catalog，具体地址为<http://repo1.maven.org/maven2/archetype-catalog.xml>；
+- `file://...`：本地指定位置的Archetype Catalog；
+- `http://...`：可以使用HTTP协议指定的远程Archetype Catalog。
+
+### 从本地仓库生成Archetype Catalog
+
+`maven-archetype-plugin`提供了一个名为`crawl`的目标，可以用它来遍历本地Maven仓库的内容，并自动生成`archetype-catalog.xml`文件：
+
+```bash
+$ mvn archetype:crawl
+```
+
+如果不提供任何参数，`crawl`会遍历用户在`settings.xml`中定义的`localRepository`，并且在该仓库的根目录下生成`archetype-catalog.xml`文件。
+
+用户也可以使用参数指定要遍历的本地Maven仓库和要生成Catalog文件：
+
+```bash
+$ mvn archetype:crawl -Drepository=/maven/repository -Dcatalog=/archetype-catalog.xml
+```
+
+### 为Nexus私有仓库实时生成Archetype Catalog
+
+`nexus-archetype-plugin`插件能够基于Nexus仓库索引实时地生成`archetype-catalog.xml`文件，只要用户安装了该插件。
+
+首先，从<https://repository.sonatype.org/content/groups/forge/org/sonatype/nexus/plugins/nexus-archetype-plugin/>下载最新插件。
+
+然后，解压到Nexus工作目录`sonatype-work/nexus/plugin-repository/`下。
+
+最后，重启Nexus，插件就安装完成了。
+
+当用户浏览Nexus仓库内容时，就能够在仓库的根目录下发现`archetype-catalog.xml`文件，右击选择下载即可。
+
+> 新版本的Nexus似乎不需要手工安装`nexus-archetype-plugin`插件。
 
 ## 常用Archetype
 

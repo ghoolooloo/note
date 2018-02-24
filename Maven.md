@@ -162,13 +162,13 @@ Maven是一个项目管理工具。
 在Maven中，可以使用Archetype来生成项目的骨架：
 
 ```bash
-mvn archetype:generate -DgroupId=com.mycompany.app -DartifactId=my-app -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false
+$ mvn archetype:generate -DgroupId=com.mycompany.app -DartifactId=my-app -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false
 ```
 
 如果是使用Powershell，要记得给形如“-Dxxx”的参数加上引号：
 
 ```powershell
-mvn archetype:generate '-DgroupId=com.mycompany.app' '-DartifactId=my-app2' '-DarchetypeArtifactId=maven-archetype-quickstart' '-DinteractiveMode=false'
+> mvn archetype:generate '-DgroupId=com.mycompany.app' '-DartifactId=my-app2' '-DarchetypeArtifactId=maven-archetype-quickstart' '-DinteractiveMode=false'
 ```
 
 上面命令，将自动创建一个`my-app`目录，并将它作为项目的根目录。
@@ -1130,6 +1130,8 @@ Maven坐标在控制台输出时，常写作如下形式：
 > 实际上，`version`也是可以缺省的，这时默认为最新release版本。
 
 ## 查看生效的POM
+
+例如，查看Profile为`appserverConfig-dev`的生效POM：
 
 ```bash
 $ mvn help:effective-pom -P appserverConfig-dev

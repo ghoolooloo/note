@@ -3171,11 +3171,13 @@ mvn deploy:deploy-file -DgroupId=<group-id> \
 
 # 资源
 
-在默认情况下，目录`${basedir}/src/main/resources`用于放置资源文件、配置文件等，它们在打包时，将原样打包进JAR或WAR中。
+## 资源过滤
+
+在默认情况下，目录`${basedir}/src/main/resources`用于放置资源文件、配置文件等，它们在打包时，将原样打包进JAR或WAR中。在WAR中，这些资源文件将打包到`WEB-INF/classes`目录中。
 
 同样，目录`${basedir}/src/test/resources`用于放置测试用的资源。
 
-## 过滤资源
+另外，也可以使用`<resource>`元素来自定义资源目录。
 
 过滤的资源文件中允许通过插值方式——`${属性名}`，访问构建时的属性。
 
@@ -3318,6 +3320,196 @@ mvn process-resources "-Dcommand.line.prop=hello again"
 ```
 
 > 过滤资源中无法引用环境变量。
+
+## Web资源过滤
+
+在默认情况下，位于`src/main/webapp`的资源称为Web资源，与普通资源一样，也可以启用Web资源过滤，这样在Web资源中也可以使用插值。
+
+启用Web资源过滤是通过配置`maven-war-plugin`插件实现的。另外，通过该插件还可以配置自定义的Web资源目录：
+
+```xml
+<project>
+  ...
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-war-plugin</artifactId>
+        <version>3.2.0</version>
+        <configuration>
+          <webResources>
+            <!-- the default value is the filter list under build -->
+            <!-- specifying a filter will override the filter list under build -->
+            <filters>
+              <filter>properties/config.prop</filter>
+            </filters>
+            <nonFilteredFileExtensions>
+              <!-- default value contains jpg,jpeg,gif,bmp,png -->
+              <nonFilteredFileExtension>pdf</nonFilteredFileExtension>
+            </nonFilteredFileExtensions>
+            <resource>
+              <!-- this is relative to the pom.xml directory -->
+              <directory>resource2</directory>
+              <!-- it's not a good idea to filter binary files -->
+              <filtering>false</filtering>
+            </resource>
+            <resource>
+              <directory>configurations</directory>
+              <!-- enable filtering -->
+              <filtering>true</filtering>
+              <excludes><!-- there's no default value for this -->
+                <exclude>**/properties</exclude>
+              </excludes>
+            </resource>
+          </webResources>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  ...
+</project>
+```
+
+Web资源目录下的东西，将打包到WAR包的根目录下。
+
+例如：打包之前的项目结构：
+
+```
+.
+ |-- configurations
+ |   |-- config.cfg
+ |   `-- properties
+ |       `-- config.prop
+ |-- pom.xml
+ |-- resource2
+ |   |-- external-resource.jpg
+ |   `-- image2
+ |       `-- external-resource2.jpg
+ `-- src
+     `-- main
+         |-- java
+         |   `-- com
+         |       `-- example
+         |           `-- projects
+         |               `-- SampleAction.java
+         |-- resources
+         |   `-- images
+         |       `-- sampleimage.jpg
+         `-- webapp
+             |-- WEB-INF
+             |   `-- web.xml
+             |-- index.jsp
+             `-- jsp
+                 `-- websource.jsp
+```
+
+`config.prop` ：
+
+```properties
+interpolated_property=some_config_value
+```
+
+`config.cfg` ：
+
+```xml
+<another_ioc_container>
+  <configuration>${interpolated_property}</configuration>
+</another_ioc_container>
+```
+
+打包后的结果WAR的结构：
+
+```
+documentedproject-1.0-SNAPSHOT.war
+ |-- META-INF
+ |   |-- MANIFEST.MF
+ |   `-- maven
+ |       `-- com.example.projects
+ |           `-- documentedproject
+ |               |-- pom.properties
+ |               `-- pom.xml
+ |-- WEB-INF
+ |   |-- classes
+ |   |   |-- com
+ |   |   |   `-- example
+ |   |   |       `-- projects
+ |   |   |           `-- SampleAction.class
+ |   |   `-- images
+ |   |       `-- sampleimage.jpg
+ |   `-- web.xml
+ |-- config.cfg
+ |-- external-resource.jpg
+ |-- image2
+ |   `-- external-resource2.jpg
+ |-- index.jsp
+ `-- jsp
+     `-- websource.jsp
+```
+
+结果 `config.cfg` ：
+
+```xml
+<another_ioc_container>
+  <configuration>some_config_value</configuration>
+</another_ioc_container>
+```
+
+### 自定义Web资源的输出路径
+
+默认情况，Web资源将被输出到WAR包的根目录下。可以通过配置`maven-war-plugin`插件，自定义Web资源的输出路径：
+
+```xml
+        ...
+        <configuration>
+          <webResources>
+            <resource>
+              ...
+            </resource>
+            <resource>
+              <directory>configurations</directory>
+              <!-- override the destination directory for this resource -->
+              <targetPath>WEB-INF</targetPath>
+              <!-- enable filtering -->
+              <filtering>true</filtering>
+              <excludes>
+                <exclude>**/properties</exclude>
+              </excludes>
+            </resource>
+          </webResources>
+        </configuration>
+        ...
+```
+
+结果WAR结构：
+
+```
+documentedproject-1.0-SNAPSHOT.war
+ |-- META-INF
+ |   |-- MANIFEST.MF
+ |   `-- maven
+ |       `-- com.example.projects
+ |           `-- documentedproject
+ |               |-- pom.properties
+ |               `-- pom.xml
+ |-- WEB-INF
+ |   |-- classes
+ |   |   |-- com
+ |   |   |   `-- example
+ |   |   |       `-- projects
+ |   |   |           `-- SampleAction.class
+ |   |   `-- images
+ |   |       `-- sampleimage.jpg
+ |   |-- config.cfg
+ |   `-- web.xml
+ |-- external-resource.jpg
+ |-- image2
+ |   `-- external-resource2.jpg
+ |-- index.jsp
+ `-- jsp
+     `-- websource.jsp
+```
+
+
 
 # Profile
 
@@ -4148,6 +4340,14 @@ $ mvn archetype:crawl -Drepository=/maven/repository -Dcatalog=/archetype-catalo
 
 # 版本管理
 
+语义化版本：详见<https://semver.org/lang/zh-CN/>
+
+```
+<主版本号>.<次版本号>.<修订号>-<先行版本号>+<版本编译信息>
+```
+
+
+
 ## 什么是`SNAPSHOT`版本
 
 `<version>`的值中包含“SNAPSHOT”的，例如：`1.0-SNAPSHOT`，表示开发版；不包含的是正式版。
@@ -4162,7 +4362,9 @@ $ mvn archetype:crawl -Drepository=/maven/repository -Dcatalog=/archetype-catalo
 $ mvn clean install -U
 ```
 
+## 自动化版本管理
 
+使用`maven-release-plugin`可进行自动化版本管理。
 
 # 项目站点
 
@@ -4441,6 +4643,30 @@ maven-changelog-plugin：基于版本控制系统生成变更报告。
 cobertura-maven-plugin：生成测试覆盖率报告。
 
 # Maven与测试
+
+## 使用Maven执行测试
+
+```bash
+$ mvn test
+```
+
+Maven实际上是通过`maven-surefire-plugin`插件（默认绑定到`test`阶段）来执行JUnit或者TestNG的测试用例的。
+
+## 跳过测试
+
+只跳过测试运行：
+
+```bash
+$ mvn package -DskipTests
+```
+
+跳过测试运行，并且也跳过测试代码的编译：
+
+```bash
+$ mvn package -Dmaven.test.skip=true
+```
+
+
 
 # 配置代理
 

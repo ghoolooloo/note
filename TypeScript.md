@@ -1,4 +1,4 @@
-*TypeScript 2.7*
+*[TypeScript](http://www.typescriptlang.org/index.html) 2.7*
 
 # 简介
 
@@ -642,29 +642,454 @@ for (var i = 0; i < 10; i++) {
 …
 ```
 
-setTimeout在若干毫秒后执行一个函数，并且是在for循环结束后。 for循环结束后，i的值为10。 所以当函数被调用的时候，它会打印出10！
+`setTimeout`在若干毫秒后执行一个函数，并且是在for循环结束后。 for循环结束后，i的值为`10`。 所以当函数被调用的时候，它会打印出`10`！
 
 一个通常的解决方法是使用立即执行的函数表达式（IIFE）来捕获每次迭代时i的值：
 
+```typescript
 for (var i = 0; i < 10; i++) {
-
-​    // capture the current state of 'i'
-
-​    // by invoking a function with its current value
-
-​    (function(i) {  //参数i会覆盖for循环里的i
-
-​        setTimeout(function() { console.log(i); }, 100 * i);
-
-​    })(i);
-
+  // capture the current state of 'i'
+  // by invoking a function with its current value
+  (function(i) {  //参数i会覆盖for循环里的i
+    setTimeout(function() { console.log(i); }, 100 * i);
+  })(i);
 }
+```
+
+
 
 ### let
 
+let声明使用的是词法作用域或块作用域。这是let与var的区别之处。
+
+拥有块级作用域的变量的另一个特点是，它们不能在被声明之前读或写。
+
+```typescript
+a++; // illegal to use 'a' before it's declared;
+let a;
+```
+
+注意：我们仍然可以在一个拥有块作用域变量被声明前获取它。 只是我们不能在变量声明前去调用那个函数。
+
+```typescript
+function foo() {
+  // okay to capture 'a'
+  return a;
+}
+
+// 不能在'a'被声明前调用'foo'
+// 运行时应该抛出错误
+foo();
+
+let a;
+```
+
+let声明不能在一个作用域里多次声明同一个变量（不管这些变量原来是var声明、let声明或者函数参数）。在嵌套作用域中，内层作用域变量会屏蔽同名的外层作用域变量。
+
+## 常量
+
+```typescript
+const numLivesForCat = 9;
+```
+
+`const`声明是使用块级作用域。
+
+## 别名
+
+可以使用`import`来给任意标识符创建别名，也包括导入的模块中的对象。
+
+```typescript
+namespace Shapes {
+  export namespace Polygons {
+    export class Triangle { }
+    export class Square { }
+  }
+}
+
+import polygons = Shapes.Polygons;
+let sq = new polygons.Square(); // Same as "new Shapes.Polygons.Square()"
+```
+
+这与使用`var`相似，但它还适用于类型和导入的具有命名空间含义的符号。 重要的是，对于值来讲，`import`会生成与原始符号不同的引用，所以改变别名的`var`值并不会影响原始变量的值。
+
+## 解构
+
+解构类似于其他语言中的模式匹配。
+
+解构数组：
+
+```typescript
+let input = [1, 2];
+let [first, second] = input;
+console.log(first); // outputs 1
+console.log(second); // outputs 2
+```
+
+交换两个变量：
+
+```typescript
+[first, second] = [second, first];
+```
+
+作用于函数参数：
+
+```typescript
+function f([first, second]: [number, number]) {
+  console.log(first);
+  console.log(second);
+}
+
+f(input);
+```
+
+可以忽略你不关心的尾随元素：
+
+```typescript
+let [first] = [1, 2, 3, 4];
+console.log(first); // outputs 1
+```
+
+或其它元素：
+
+```typescript
+let [, second, , fourth] = [1, 2, 3, 4];
+```
+
+也可以解构对象：
+
+```typescript
+let o = {
+  a: "foo",
+  b: 12,
+  c: "bar"
+}
+
+let {a, b} = o;
+```
+
+就像数组解构，你可以用没有声明的赋值：
+
+```typescript
+({a, b} = {a: "baz", b: 101});
+```
+
+注意，我们需要用括号将它括起来，因为Javascript通常会将以 { 起始的语句解析为一个块。
+
+解构也可用于函数声明中：
+
+```typescript
+type C = {a: string, b?: number}
+
+function f({a, b}: C): void {
+  // ...
+}
+```
+
+### `...变量
+
+可以使用`...变量`语法创建一个剩余变量列表：
+
+```typescript
+let [first, ...rest] = [1, 2, 3, 4];
+console.log(first); // outputs 1
+console.log(rest); // outputs [ 2, 3, 4 ]
+```
+
+### 属性别名
+
+可以给属性以不同的名字：
+
+```typescript
+let {a: newName1, b: newName2} = o;
+```
+
+这里“:”不是指示类型，而是表示表示别名。即newName1是a的别名。上面的语句，加上类型指示，则变成：
+
+```typescript
+let {a: newName1, b: newName2}: {a: string, b: number} = o;
+```
+
+### 默认值
+
+默认值可以让你在属性为 `undefined` 时使用缺省值：
+
+```typescript
+function keepWholeObject(wholeObject: {a: string, b?: number}) {
+  let {a, b = 1001} = wholeObject;
+}
+```
+
+当`b`为 `undefined`时，使用默认值`1001`。
+
+## 声明合并
+
+“声明合并”是指编译器将针对同一个名字的多个独立声明合并为单一声明。 合并后的声明同时拥有原先多个声明的特性。
+
+### 接口合并
+
+接口合并的机制是把双方的成员放到一个同名的接口里。
+
+接口的非函数的成员必须是唯一的。 如果两个接口中同时声明了同名的非函数成员编译器则会报错。
+
+```typescript
+interface Box {
+  height: number;
+  width: number;
+}
+
+interface Box {
+  scale: number;
+}
+
+let box: Box = {height: 5, width: 6, scale: 10};
+```
+
+对于函数成员，每个同名函数声明都会被当成这个函数的一个重载。 同时需要注意，当接口A与后来的接口A合并时，后面的接口具有更高的优先级。
+
+```typescript
+interface Cloner {
+  clone(animal: Animal): Animal;
+}
+
+interface Cloner {
+  clone(animal: Sheep): Sheep;
+}
+
+interface Cloner {
+  clone(animal: Dog): Dog;
+  clone(animal: Cat): Cat;
+}
+```
+
+这三个接口合并成一个声明：
+
+```typescript
+interface Cloner {
+  clone(animal: Dog): Dog;
+  clone(animal: Cat): Cat;
+  clone(animal: Sheep): Sheep;
+  clone(animal: Animal): Animal;
+}
+```
+
+注意每组接口里的声明顺序保持不变，但各组接口之间的顺序是越后来接口的重载方法出现在越靠前位置。
+
+这个规则有一个例外是当出现特殊的函数签名时。 如果签名里有一个参数的类型是单一的字符串字面量（比如，不是字符串字面量的联合类型），那么它将会被提升到重载列表的最顶端。
+
+```typescript
+interface Document {
+  createElement(tagName: any): Element;
+}
+
+interface Document {
+  createElement(tagName: "div"): HTMLDivElement;
+  createElement(tagName: "span"): HTMLSpanElement;
+}
+
+interface Document {
+  createElement(tagName: string): HTMLElement;
+  createElement(tagName: "canvas"): HTMLCanvasElement;
+}
+```
+
+合并后的`Document`将会像下面这样：
+
+```typescript
+interface Document {
+  createElement(tagName: "canvas"): HTMLCanvasElement;
+  createElement(tagName: "div"): HTMLDivElement;
+  createElement(tagName: "span"): HTMLSpanElement;
+  createElement(tagName: string): HTMLElement;
+  createElement(tagName: any): Element;
+}
+```
+
+### 命名空间合并
+
+```typescript
+namespace Animals {
+  export class Zebra { }
+}
+
+namespace Animals {
+  export interface Legged { numberOfLegs: number; }
+  export class Dog { }
+}
+```
+
+等同于：
+
+```typescript
+namespace Animals {
+  export interface Legged { numberOfLegs: number; }
+  export class Zebra { }
+  export class Dog { }
+}
+```
+
+非导出成员仅在其原有的（合并前的）命名空间内可见。这就是说合并之后，从其它命名空间合并进来的成员无法访问非导出成员。
+
+### 命名空间与其他声明合并
+
+## 外部声明
+
+
+
 # 语句
 
+## 迭代语句
+
+### 迭代器
+
+当一个对象实现了`Symbol.iterator`方法时，我们认为它是可迭代的。
+
+ 一些内置的类型如`Array`，`Map`，`Set`，`String`，`Int32Array`，`Uint32Array`等都已经实现了各自的`Symbol.iterator`。 
+
+### for-of迭代
+
+for-of语句通过调用可迭代对象上的`Symbol.iterator`方法，来遍历它。
+
+```typescript
+let list = [4, 5, 6];
+
+for (let i of list) {
+  console.log(i); // "4", "5", "6"
+}
+```
+
+for-of语句与for-in均可迭代一个列表，它们的区别：
+
+1）它们用于迭代的值却不同，for-in迭代的是对象的键的列表，而for-of则迭代对象的键对应的值。
+
+```typescript
+for (let i in list) {
+	console.log(i); // "0", "1", "2",
+}
+```
+
+2）for-in可以操作任何对象，而for-of只专注于可迭代对象。
+
+注意：当生成目标为ES5或ES3，迭代器只允许在Array类型上使用。 在非数组值上使用for-of语句会得到一个错误，就算这些非数组值已经实现了`Symbol.iterator`属性。只有目标是ECMAScipt 2015或更高才能使用上面所有特性。
+
 # 函数
+
+## 函数定义
+
+### 命名函数
+
+```typescript
+function add(x: number, y: number): number {
+  return x + y;
+}
+```
+
+由于TypeScript有类型推断能力，因此，上面的类型指示都可以省略：
+
+```typescript
+function add(x, y) {
+  return x + y;
+}
+```
+
+### 匿名函数
+
+```typescript
+let myAdd = function(x: number, y: number): number { return x+y; };
+```
+
+或者
+
+```typescript
+let myAdd = function(x, y) { return x + y; };
+```
+
+### 箭头函数（Lambda）
+
+```typescript
+(param1, param2, …, paramN) => { statements }
+(param1, param2, …, paramN) => expression
+
+// equivalent to: (param1, param2, …, paramN) => { return expression; }
+// Parentheses are optional when there's only one parameter:
+(singleParam) => { statements }
+singleParam => { statements }
+
+// A function with no parameters requires parentheses:
+() => { statements }
+() => expression // equivalent to: () => { return expression; }
+
+// Parenthesize the body to return an object literal expression:
+params => ({foo: bar})
+
+// Rest parameters and default parameters are supported
+(param1, param2, ...rest) => { statements }
+(param1 = defaultValue1, param2, …, paramN = defaultValueN) => { statements }
+
+// Destructuring within the parameter list is also supported
+var f = ([a, b] = [1, 2], {x: c} = {x: a + b}) => a + b + c;
+f();  // 6
+```
+
+
+
+## 函数类型
+
+函数的类型只是由参数类型和返回值组成的。 函数中使用的捕获变量不会体现在类型里。 实际上，这些变量是函数的隐藏状态并不是组成API的一部分。
+
+### 箭头式
+
+```typescript
+let myAdd: (baseValue:number, increment:number) => number =
+  function(x: number, y: number): number { return x + y; };
+```
+
+只要参数类型是匹配的，而不在乎参数名是否一致。
+
+没有参数和返回值的函数类型写成：
+
+```typescript
+() => void
+```
+
+### 接口式
+
+接口也可以描述函数类型。
+
+为了使用接口表示函数类型，我们需要给接口定义一个调用签名。 它就像是一个只有参数列表和返回值类型的函数定义。参数列表里的每个参数都需要名字和类型。
+
+```typescript
+interface SearchFunc {
+  (source: string, subString: string): boolean;
+}
+
+let mySearch: SearchFunc;
+
+mySearch = function(source: string, subString: string) {
+  let result = source.search(subString);
+  if (result == -1) {
+    return false;
+  }
+  else {
+    return true;
+  }
+}
+```
+
+对于函数类型的类型检查来说，函数的参数名不需要与接口里定义的名字相匹配。另外，由于类型推断，`mySearch`的函数参数类型也可以不显式指定：
+
+```typescript
+mySearch = function(src, sub) {
+  let result = src.search(sub);
+  if (result == -1) {
+    return false;
+  }
+  else {
+    return true;
+  }
+}
+```
+
+
 
 ## 可选参数
 
@@ -774,6 +1199,634 @@ let result3 = buildName("Bob", "Adams");         // okay and returns "Bob Adams"
 let result4 = buildName(undefined, "Adams");     // okay and returns "Will Adams"
 ```
 
+## 剩余参数
+
+在JavaScript里，可以使用`arguments`来访问多余参数。在TypeScript里，可以使用剩余参数来接收不确定个数的参数（即可以一个都没有，也可以有任意个）。
+
+剩余参数由“...”后跟参数名组成。
+
+剩余参数实际上就是一个数组。
+
+```typescript
+function buildName(firstName: string, ...restOfName: string[]) {
+  return firstName + " " + restOfName.join(" ");
+}
+
+let employeeName = buildName("Joseph", "Samuel", "Lucas", "MacKinzie");
+let buildNameFun: (fname: string, ...rest: string[]) => string = buildName;
+```
+
+## 闭包
+
+在TypeScript里，函数可以使用函数体外部的变量。 当函数这么做时，我们说它‘捕获’了这些变量。
+
+```typescript
+let z = 100;
+
+function addToZ(x, y) {
+  return x + y + z;
+}
+```
+
+## 重载
+
+```typescript
+let suits = ["hearts", "spades", "clubs", "diamonds"];
+function pickCard(x: {suit: string; card: number; }[]): number;
+function pickCard(x: number): {suit: string; card: number; };
+function pickCard(x): any {
+  // Check to see if we're working with an object/array
+  // if so, they gave us the deck and we'll pick the card
+  if (typeof x == "object") {
+    let pickedCard = Math.floor(Math.random() * x.length);
+    return pickedCard;
+  }
+  // Otherwise just let them pick the card
+  else if (typeof x == "number") {
+    let pickedSuit = Math.floor(x / 13);
+    return { suit: suits[pickedSuit], card: x % 13 };
+  }
+}
+
+let myDeck = [{ suit: "diamonds", card: 2 }, { suit: "spades", card: 10 }, { suit: "hearts", card: 4 }];
+let pickedCard1 = myDeck[pickCard(myDeck)];
+console.log("card: " + pickedCard1.card + " of " + pickedCard1.suit);
+let pickedCard2 = pickCard(15);
+console.log("card: " + pickedCard2.card + " of " + pickedCard2.suit);
+```
+
+注意，`function pickCard(x): any`并不是重载列表的一部分，因此这里只有两个重载：一个是接收对象另一个接收数字。 以其它参数调用`pickCard`会产生错误。
+
+# 接口
+
+## 接口定义
+
+```typescript
+interface LabelledValue {
+  label: string; // TypeScript接口可以只有属性
+}
+
+function printLabel(labelledObj: LabelledValue) {
+  console.log(labelledObj.label);
+}
+
+let myObj = {size: 10, label: "Size 10 Object"};
+printLabel(myObj); // 鸭子类型
+```
+
+## 可选属性
+
+接口里的属性不全都是必需的。 有些是只在某些条件下存在，或者根本不存在。
+
+可选属性名字后面要加一个`?`符号。
+
+```typescript
+interface SquareConfig {
+  color?: string;
+  width?: number;
+}
+
+function createSquare(config: SquareConfig): {color: string; area: number} {
+  let newSquare = {color: "white", area: 100};
+  if (config.color) {
+  	newSquare.color = config.color;
+  }
+  if (config.width) {
+    newSquare.area = config.width * config.width;
+  }
+  return newSquare;
+}
+
+let mySquare = createSquare({color: "black"});
+```
+
+可选属性的好处之一是可以对可能存在的属性进行预定义，好处之二是可以捕获引用了不存在的属性时的错误。 
+
+### 额外属性检查
+
+```typescript
+interface SquareConfig {
+  color?: string;
+  width?: number;
+}
+
+function createSquare(config: SquareConfig): { color: string; area: number } {
+  // ...
+}
+
+// error: 'colour' not expected in type 'SquareConfig'
+let mySquare = createSquare({ colour: "red", width: 100 });
+```
+
+注意传入`createSquare`的参数拼写为`colour`而不是`color`。 虽然TypeScript使用鸭子类型，但在这里它仍会报错。因为对象字面量会被特殊对待而且会经过额外属性检查，当将它们赋值给含可变属性的类型的变量或作为参数传递的时候。 如果一个对象字面量存在任何“目标类型”不包含的属性时，你会得到一个错误。
+
+绕开这些检查非常简单。 最简便的方法是使用类型断言：
+
+```typescript
+let mySquare = createSquare({ width: 100, opacity: 0.5 } as SquareConfig);
+```
+
+还可以通过添加一个字符串索引签名方式绕开这些检查：
+
+```typescript
+interface SquareConfig {
+  color?: string;
+  width?: number;
+  [propName: string]: any;
+}
+```
+
+`SquareConfig`带有上面定义的类型的`color`和`width`属性，并且还会带有任意数量的其它属性。
+
+最后一种跳过这些检查的方式，就是将这个对象赋值给一个另一个变量： 因为`squareOptions`不会经过额外属性检查，所以编译器不会报错。
+
+```typescript
+let squareOptions = { colour: "red", width: 100 };
+let mySquare = createSquare(squareOptions);
+```
+
+## 只读属性
+
+可以在属性名前用`readonly`来定义只读属性：
+
+```typescript
+interface Point {
+  readonly x: number;
+  readonly y: number;
+}
+```
+
+只读属性必须在声明时或构造函数里被初始化，之后不能被修改：
+
+```typescript
+let p1: Point = { x: 10, y: 20 };
+p1.x = 5; // error!
+```
+
+最简单判断该用`readonly`还是`const`的方法是看要把它做为变量使用还是做为一个属性。 做为变量使用的话用`const`，若做为属性则使用`readonly`。
+
+在类中使用`readonly`：
+
+```typescript
+class Octopus {
+  readonly name: string;
+  readonly numberOfLegs: number = 8;
+  constructor (theName: string) {
+    this.name = theName;
+  }
+}
+
+let dad = new Octopus("Man with the 8 strong legs");
+dad.name = "Man with the 3-piece suit"; // error! name is readonly.
+```
+
+### 只读数组——`ReadonlyArray<T>`
+
+`ReadonlyArray<T>`类型，它与`Array<T>`相似，只是把所有可变方法去掉了，因此可以确保数组创建后再也不能被修改：
+
+```typescript
+let a: number[] = [1, 2, 3, 4];
+let ro: ReadonlyArray<number> = a;
+ro[0] = 12; // error!
+ro.push(5); // error!
+ro.length = 100; // error!
+a = ro; // error!
+```
+
+上面代码的最后一行，可以看到就算把整个`ReadonlyArray`赋值到一个普通数组也是不可以的。 但是你可以用类型断言重写：
+
+```typescript
+a = ro as number[];
+```
+
+## 索引签名
+
+```typescript
+interface StringArray {
+	[index: number]: string;
+}
+
+let myArray: StringArray;
+myArray = ["Bob", "Fred"];
+let myStr: string = myArray[0];
+```
+
+`StringArray`接口具有索引签名。 这个索引签名表示了当用`number`去索引`StringArray`时会得到`string`类型的返回值。
+
+共支持两种索引签名：字符串和数字。 可以同时使用两种类型的索引，但是数字索引的返回值必须是字符串索引返回值类型的子类型。 这是因为当使用`number`来索引时，JavaScript会将它转换成`string`然后再去索引对象。 也就是说用`100`（一个`number`）去索引等同于使用`"100"`（一个`string`）去索引，因此两者需要保持一致。
+
+```typescript
+class Animal {
+  name: string;
+}
+
+class Dog extends Animal {
+  breed: string;
+}
+
+interface Okay {
+  [x: number]: Dog;
+  [x: string]: Animal;
+}
+```
+
+由于JavaScript中访问对象属性可以使用`obj.property`和`obj["property"]`两种形式。因此，声明了索引签名的接口，也会约束接口的其他属性的类型必须是索引签名类型的子类型。
+
+```typescript
+interface NumberDictionary {
+  [index: string]: number;
+  length: number;    // 可以，length是number类型
+  name: string       // 错误，`name`的类型不是索引类型的子类型
+}
+```
+
+最后，你可以将索引签名设置为只读，这样就防止了给索引赋值：
+
+```typescript
+interface ReadonlyStringArray {
+  readonly [index: number]: string;
+}
+
+let myArray: ReadonlyStringArray = ["Alice", "Bob"];
+myArray[2] = "Mallory"; // error!
+```
+
+## 构造器类型
+
+构造器类型与函数类型类似，只是多了一个`new`：
+
+```typescript
+interface ClockConstructor {
+  new(hour: number, minute: number);
+}
+```
+
+用接口描述的构造器类型不能被类所实现。因为当一个类实现了一个接口时，只对其实例部分进行类型检查。 `constructor`存在于类型的静态部分，所以不在检查的范围内。
+
+```typescript
+interface ClockInterface {
+  tick();
+}
+
+function createClock(ctor: ClockConstructor, hour: number, minute: number): ClockInterface {
+  return new ctor(hour, minute);
+}
+
+class DigitalClock implements ClockInterface {
+  constructor(h: number, m: number) { }
+  tick() {
+    console.log("beep beep");
+  }
+}
+
+class AnalogClock implements ClockInterface {
+  constructor(h: number, m: number) { }
+  tick() {
+    console.log("tick tock");
+  }
+}
+
+let digital = createClock(DigitalClock, 12, 17);
+let analog = createClock(AnalogClock, 7, 32);
+```
+
+## 方法
+
+在接口、类或对象字面量里定义的函数，称为方法。定义方法时，要省略`function`关键字。
+
+## 扩展接口
+
+和类一样，接口也可以相互扩展。并且，一个接口可以继承多个接口：
+
+```typescript
+interface Shape {
+  color: string;
+}
+
+interface PenStroke {
+  penWidth: number;
+}
+
+interface Square extends Shape, PenStroke {
+  sideLength: number;
+}
+
+let square = <Square>{};
+square.color = "blue";
+square.sideLength = 10;
+square.penWidth = 5.0;
+```
+
+## 扩展类
+
+TypeScript中的类可以当作接口使用。因此，接口可以继承一个类，它会继承类的成员（包括`private`和`protected`成员）但不包括其实现。 当你创建了一个接口继承了一个拥有私有或受保护的成员的类时，这个接口类型只能被这个类或其子类所实现。
+
+```typescript
+class Control {
+  private state: any;
+}
+
+interface SelectableControl extends Control {
+  select(): void;
+}
+
+class Button extends Control {
+  select() { }
+}
+
+class Image {
+  select() { }
+}
+```
+
+在上面的例子里，`SelectableControl`包含了`Control`的所有成员，包括私有成员`state`。 因为`state`是私有成员，所以只能够是`Control`的子类们才能实现`SelectableControl`接口。 因为只有`Control`的子类才能够拥有一个声明于`Control`的私有成员`state`，这对私有成员的兼容性是必需的。但`Image`类并不是这样的。
+
+## 混合类型
+
+接口可以混合使用函数类型、构造器类型、索引签名等。这时它的对象可以同时做为函数和对象使用：
+
+```typescript
+interface Counter {
+  (start: number): string;
+  interval: number;
+  reset(): void;
+}
+
+function getCounter(): Counter {
+  let counter = <Counter>function (start: number) { };
+  counter.interval = 123;
+  counter.reset = function () { };
+  return counter;
+}
+
+let c = getCounter();
+c(10);
+c.reset();
+c.interval = 5.0;
+```
+
+# 类
+
+## 类的定义
+
+```typescript
+class Greeter {
+  greeting: string;
+  
+  constructor(message: string) {
+    this.greeting = message;
+  }
+
+  greet() {
+    return "Hello, " + this.greeting;
+  }
+}
+
+let greeter = new Greeter("world");
+```
+
+## 继承和多态
+
+```typescript
+class Animal {
+  name:string;
+  constructor(theName: string) { this.name = theName; }
+  move(distanceInMeters: number = 0) {
+    console.log(`${this.name} moved ${distanceInMeters}m.`);
+  }
+}
+
+class Snake extends Animal {
+  constructor(name: string) { super(name); }
+  move(distanceInMeters = 5) {
+    console.log("Slithering...");
+    super.move(distanceInMeters);
+  }
+}
+
+class Horse extends Animal {
+  constructor(name: string) { super(name); }
+  move(distanceInMeters = 45) {
+    console.log("Galloping...");
+    super.move(distanceInMeters);
+  }
+}
+
+let sam = new Snake("Sammy the Python");
+let tom: Animal = new Horse("Tommy the Palomino");
+sam.move();
+tom.move(34);
+```
+
+输出：
+
+```bash
+Slithering...
+Sammy the Python moved 5m.
+Galloping...
+Tommy the Palomino moved 34m.
+```
+
+## 实现接口
+
+```typescript
+interface ClockInterface {
+  currentTime: Date;
+  setTime(d: Date);
+}
+
+class Clock implements ClockInterface {
+  currentTime: Date;
+  setTime(d: Date) {
+    this.currentTime = d;
+  }
+  constructor(h: number, m: number) { }
+}
+```
+
+## 访问修饰符
+
+注意：接口成员不能使用访问修饰符。
+
+| 访问修饰符  | 说明   |
+| ----------- | ------ |
+| `public`    | 缺省。 |
+| `private`   |        |
+| `protected` |        |
+
+`protected`的成员可以在所属的类内部访问，还可以在子类内部访问。
+
+构造函数也可以被标记成`protected`。 这意味着这个类不能在包含它的类外被实例化，但是能被继承。比如，
+
+```typescript
+class Person {
+  protected name: string;
+  protected constructor(theName: string) { this.name = theName; }
+}
+
+// Employee can extend Person
+class Employee extends Person {
+  private department: string;
+  constructor(name: string, department: string) {
+    super(name);
+    this.department = department;
+  }
+  public getElevatorPitch() {
+    return Hello, my name is ${this.name} and I work in ${this.department}.;
+  }
+}
+
+let howard = new Employee("Howard", "Sales");
+let john = new Person("John"); // Error: The 'Person' constructor is protected
+```
+
+## 参数属性
+
+参数属性是在构造器中声明的，显式带有访问修饰符的参数。参数属性会自动在类中创建一个相同的属性，并将值赋值给它：
+
+```typescript
+class Animal {
+  constructor(private name: string) { }
+  move(distanceInMeters: number) {
+    console.log(${this.name} moved ${distanceInMeters}m.);
+  }
+}
+```
+
+相当于：
+
+```typescript
+class Animal {
+  private name: string;
+  constructor(theName: string) { this.name = theName; }
+  move(distanceInMeters: number) {
+    console.log(`${this.name} moved ${distanceInMeters}m.`);
+  }
+}
+```
+
+## 存取器
+
+```typescript
+let passcode = "secret passcode";
+
+class Employee {
+  private _fullName: string;
+  get fullName(): string {
+    return this._fullName;
+  }
+  set fullName(newName: string) {
+    if (passcode && passcode == "secret passcode") {
+      this._fullName = newName;
+    } else {
+      console.log("Error: Unauthorized update of employee!");
+    }
+  }
+}
+
+let employee = new Employee();
+employee.fullName = "Bob Smith";
+if (employee.fullName) {
+  alert(employee.fullName);
+}
+```
+
+存取器要求你将编译器设置为输出ECMAScript 5或更高。 不支持降级到ECMAScript 3。 其次，只带有`get`不带有`set`的存取器自动被推断为`readonly`。
+
+## 静态属性
+
+静态属性属于类而不属于实例：
+
+```typescript
+class Grid {
+  static origin = {x: 0, y: 0};
+  calculateDistanceFromOrigin(point: {x: number; y: number;}) {
+    let xDist = (point.x - Grid.origin.x);
+    let yDist = (point.y - Grid.origin.y);
+    return Math.sqrt(xDist * xDist + yDist * yDist) / this.scale;
+  }
+  constructor (public scale: number) { }
+}
+```
+
+注意：接口不能声明静态属性。
+
+## 抽象类
+
+抽象类做为其它派生类的基类使用。 它们一般不会直接被实例化。 不同于接口，抽象类可以包含成员的实现细节。
+
+抽象类中的抽象方法不包含具体实现并且必须在派生类中实现。 抽象方法的语法与接口方法相似。 两者都是定义方法签名但不包含方法体。 然而，抽象方法必须包含`abstract`关键字并且可以包含访问修饰符。
+
+```typescript
+abstract class Animal {
+  abstract makeSound(): void;
+  move(): void {
+    console.log('roaming the earch...');
+  }
+}
+```
+
+## `this`
+
+`this`的含义取决于函数的调用形式，以及是否是严格模式。例外情况是在箭头函数中
+
+### `apply`或`call`调用
+
+```typescript
+function hello(thing) {  
+  console.log(this + " says hello " + thing);
+}
+
+hello.call("Yehuda", "world") //=> Yehuda says hello world  
+```
+
+`this`引用`call`方法的第一个参数。
+
+### 函数调用
+
+```typescript
+function hello(thing) {  
+  console.log("Hello " + thing);
+}
+
+hello("world")  // 相当于：hello.call(window, "world");
+```
+
+ 如果ES5使用严格模式，则相当于：`hello.call(undefined, "world");`。
+
+对于内联函数也是一样的：`(function() {})();`。相当于：`(function() {}).call(window);` 。ES5严格模式则为：`(function() {}).call(undefined);`。
+
+### 方法调用
+
+```typescript
+function hello(thing) {  
+  console.log(this + " says hello " + thing);
+}
+
+person = { name: "Brendan Eich" }  
+person.hello = hello;
+person.hello("world") // 相当于：person.hello.call(person, "world")
+hello("world") // this为window或undefined 
+```
+
+### 构造器调用
+
+`this`引用由该构造器创建的对象。
+
+### 箭头函数
+
+箭头函数在设计中使用的是Lexical this，即箭头函数能保存函数创建时的`this`值，而不是调用时的值。这是唯一一个`this`不由调用决定的场景。
+
+```typescript
+function printThis() {
+  let print = () => console.log(this);
+  print();
+}
+
+printThis.call([1]); // this引用[1]
+printThis.call([2]); // this引用[2]
+```
+
 
 
 # 类型系统
@@ -797,3 +1850,445 @@ let strLength: number = (someValue as string).length;
 ```
 
 两种形式是等价的。 至于使用哪个大多数情况下是凭个人喜好；然而，当你在TypeScript里使用JSX时，只有`as`断言是被允许的。
+
+## 类型守卫（Type Guards）
+
+类型守卫就是一些表达式，它们会在运行时检查以确保在某个作用域里的类型。
+
+### 自定义类型守卫
+
+自定义类型保护就是返回一个类型谓词的函数。
+
+```typescript
+interface Bird {
+  fly();
+  layEggs();
+}
+
+interface Fish {
+  swim();
+  layEggs();
+}
+
+function isFish(pet: Fish | Bird): pet is Fish {
+  return (<Fish>pet).swim !== undefined;
+}
+
+if (isFish(pet)) {
+  pet.swim();
+} else {
+  pet.fly();
+}
+```
+
+`参数名 is 类型` 是类型谓词，`参数名`必须是来自于当前函数签名里的一个参数名。
+
+注意：TypeScript不仅知道在`if`分支里`pet`是`Fish`类型； 它还清楚在`else`分支里，一定不是`Fish`类型，一定是`Bird`类型。
+
+### `typeof`类型守卫
+
+`typeof`类型守卫只有两种形式能被识别：`typeof 表达式 === "类型名"`和`typeof 表达式 !== "类型名"`，`"类型名"`必须是`"number"`，`"string"`，`"boolean"`或`"symbol"`。 但是TypeScript并不会阻止你与其它字符串比较，语言不会把那些表达式识别为类型守卫。
+
+```typescript
+function padLeft(value: string, padding: string | number) {
+  if (typeof padding === "number") {
+    return Array(padding + 1).join(" ") + value;
+  }
+
+  if (typeof padding === "string") {
+    return padding + value;
+  }
+
+  throw new Error(Expected string or number, got '${padding}'.);
+}
+```
+
+### `instanceof`类型守卫
+
+```typescript
+interface Padder {
+  getPaddingString(): string
+}
+
+class SpaceRepeatingPadder implements Padder {
+  constructor(private numSpaces: number) { }
+
+  getPaddingString() {
+    return Array(this.numSpaces + 1).join(" ");
+  }
+}
+
+class StringPadder implements Padder {
+  constructor(private value: string) { }
+
+  getPaddingString() {
+    return this.value;
+  }
+}
+
+function getRandomPadder() {
+  return Math.random() < 0.5 ?
+    new SpaceRepeatingPadder(4) :
+  	new StringPadder("  ");
+}
+
+// 类型为SpaceRepeatingPadder | StringPadder
+let padder: Padder = getRandomPadder();
+
+if (padder instanceof SpaceRepeatingPadder) {
+  padder; // 类型细化为'SpaceRepeatingPadder'
+}
+
+if (padder instanceof StringPadder) {
+  padder; // 类型细化为'StringPadder'
+}
+```
+
+`instanceof`的右侧要求是一个构造函数。
+
+## 类型兼容——结构性子类型
+
+TypeScript使用的是结构性类型系统。 当我们比较两种不同的类型时，并不在乎它们从何处而来，如果所有成员的类型都是兼容的，我们就认为它们的类型是兼容的。
+
+```typescript
+function printLabel(labelledObj: { label: string }) {
+  console.log(labelledObj.label);
+}
+
+let myObj = { size: 10, label: "Size 10 Object" };
+printLabel(myObj);
+
+let x: {label:string};
+x = myObj;
+```
+
+### 含`private`或`protected`成员的类型兼容
+
+当我们比较带有`private`或`protected`成员的类型的时候，情况就不同了。 如果其中一个类型里包含一个`private`成员，那么只有当另外一个类型中也存在这样一个`private`成员， 并且它们都是来自同一处声明时（例如，有继承关系），我们才认为这两个类型是兼容的。 对于`protected`成员也使用这个规则。
+
+```typescript
+class Animal {
+    private name: string;
+    constructor(theName: string) { this.name = theName; }
+}
+
+class Rhino extends Animal {
+    constructor() { super("Rhino"); }
+}
+
+class Employee {
+    private name: string;
+    constructor(theName: string) { this.name = theName; }
+}
+
+let animal = new Animal("Goat");
+let rhino = new Rhino();
+let employee = new Employee("Bob");
+
+animal = rhino;
+animal = employee; // Error: Animal and Employee are not compatible
+```
+
+尽管Employee里也有一个私有成员name，但它明显不是Animal里面定义的那个。
+
+### 函数类型的兼容
+
+参数个数不一样：
+
+```typescript
+let x = (a: number) => 0;
+let y = (b: number, s: string) => 0;
+
+y = x; // OK
+x = y; // Error
+```
+
+返回类型不一样：
+
+```typescript
+let x = () => ({name: 'Alice'});
+let y = () => ({name: 'Alice', location: 'Seattle'});
+
+x = y; // OK
+y = x; // Error because x() lacks a location property
+```
+
+类型系统强制源函数的返回值类型必须是目标函数返回值类型的子类型。
+
+函数重载：
+
+对于有重载的函数，源函数的每个重载都要在目标函数上找到对应的函数签名。 这确保了目标函数可以在所有源函数可调用的地方调用。
+
+### 枚举类型的兼容
+
+枚举类型与数值类型兼容，并且数值类型与枚举类型兼容。不同枚举类型之间是不兼容的。
+
+### 类的兼容
+
+类有静态部分和实例部分的类型。 比较两个类类型的对象时，只有实例的成员会被比较。 静态成员和构造函数不在比较的范围内。
+
+### 泛型的兼容
+
+```typescript
+interface Empty<T> {}
+
+let x: Empty<number>;
+let y: Empty<string>;
+
+x = y;  // okay, y matches structure of x
+```
+
+上面代码里，`x`和`y`是兼容的，因为它们的结构是相同，即使类型参数不一样。这里类型参数并不影响类型的结构。
+
+```typescript
+interface NotEmpty<T> {
+  data: T;
+}
+
+let x: NotEmpty<number>;
+let y: NotEmpty<string>;
+
+x = y;  // error, x and y are not compatible
+```
+
+本例中，类型参数会影响类型的结构。因此，`x`与`y`不兼容。
+
+对于没指定泛型类型的泛型参数时，会把所有泛型参数当成`any`比较。 然后用结果类型进行比较，就像上面第一个例子。
+
+比如：
+
+```typescript
+let identity = function<T>(x: T): T {
+	// ...
+}
+
+let reverse = function<U>(y: U): U {
+  // ...
+}
+
+identity = reverse;  // Okay because (x: any)=>any matches (y: any)=>any
+```
+
+## 类型推断
+
+## 类型别名
+
+```typescript
+type Name = string;
+type NameResolver = () => string;
+type NameOrResolver = Name | NameResolver;
+
+function getName(n: NameOrResolver): Name {
+  if (typeof n === 'string') {
+    return n;
+  } else {
+    return n();
+  }
+}
+```
+
+声明类型别名不会新建一个类型 - 它创建了一个新名字来引用那个类型。
+
+类型别名不能被`extends`和`implements`，即使类型别名引用的是一个接口。
+
+类型别名也不能`extends`和`implements`其它类型。 
+
+类型别名也可以是泛型：
+
+```typescript
+type Container<T> = { value: T };
+```
+
+类型别名能在右侧的属性中引用它自己：
+
+```typescript
+type LinkedList<T> = T & { next: LinkedList<T> };
+
+interface Person {
+  name: string;
+}
+
+var people: LinkedList<Person> = …;
+var s = people.name;
+var s = people.next.name;
+var s = people.next.next.name;
+var s = people.next.next.next.name;
+```
+
+除此之外，类型别名不能出现在右侧的任何地方：
+
+```typescript
+type Yikes = Array<Yikes>; // error
+```
+
+## 外部类型
+
+外部类型允许我们为现有的JavaScript类库提供额外的类型定义。通过这种方式来给编译器提供提示。
+
+<https://github.com/DefinitelyTyped/DefinitelyTyped> 预定义了许多外部类型。另外还有一个叫作`typings`的工具可以用来维护这些定义。可以用npm来安装它：
+
+```bash
+$ npm install -g typings
+```
+
+typings的配置文件定义在`typings.json`，默认情况，所有安装的外部类型都放在`./typings`目录中。
+
+```bash
+$ typings init
+```
+
+创建基础配置的`typings.json`文件。
+
+```bash
+$ typings install angularjs --ambient --save
+```
+
+安装angularjs 1.x的外部类型定义。
+
+`--save`表示在`typings.json`中添加安装的外部类型记录。
+
+# 高级类型
+
+## 交集类型（Intersection Types）
+
+交集类型是将多个类型合并为一个类型。 这让我们可以把现有的多种类型叠加到一起成为一种类型，它包含了叠加的所有类型的特性。 例如，`Person & Serializable & Loggable`同时是`Person`和`Serializable`和`Loggable`。 就是说这个类型的对象同时拥有了这三种类型的所有成员。（可以理解为交集类型`Person & Serializable & Loggable`同时是`Person`、`Serializable`和`Loggable`的子类型）
+
+```typescript
+function extend<T, U>(first: T, second: U): T & U {
+  let result = <T & U>{};
+
+  for (let id in first) {
+    (<any>result)[id] = (<any>first)[id];
+  }
+
+  for (let id in second) {
+    if (!result.hasOwnProperty(id)) {
+      (<any>result)[id] = (<any>second)[id];
+    }
+  }
+
+  return result;
+}
+
+class Person {
+  constructor(public name: string) { }
+}
+
+interface Loggable {
+  log(): void;
+}
+
+class ConsoleLogger implements Loggable {
+  log() {
+    // ...
+  }
+}
+
+var jim = extend(new Person("Jim"), new ConsoleLogger());
+var n = jim.name;
+jim.log();
+```
+
+## 联合类型（Union Types）
+
+联合类型表示一个值可以是几种类型之一。 我们用竖线`|`分隔每个类型，所以`number | string | boolean`表示一个值可以是`number`，`string`，或`boolean`。（可以理解为联合类型`number | string | boolean`是类型`number`、`string`和`boolean`的父类型）
+
+如果一个值是联合类型，我们只能访问此联合类型的所有类型里共有的成员，除非我们使用类型断言或类型保护。
+
+```typescript
+interface Bird {
+  fly();
+  layEggs();
+}
+
+interface Fish {
+  swim();
+  layEggs();
+}
+
+function getSmallPet(): Fish | Bird {
+  // ...
+}
+
+let pet = getSmallPet();
+pet.layEggs(); // okay
+pet.swim();    // errors
+
+// 仍然会报错
+if (pet.swim) {
+  pet.swim();
+}
+
+// 使用了类型断言则不会报错
+if ((<Fish>pet).swim) {
+  (<Fish>pet).swim();
+}
+```
+
+## 可辨识联合（Discriminated Unions）
+
+结合字符串字面量类型，联合类型，类型检查和类型别名可创建一个叫做可辨识联合，它也称做标签联合或代数数据类型。
+
+```typescript
+interface Square {
+  kind: "square";
+  size: number;
+}
+
+interface Rectangle {
+  kind: "rectangle";
+  width: number;
+  height: number;
+}
+
+interface Circle {
+  kind: "circle";
+  radius: number;
+}
+
+type Shape = Square | Rectangle | Circle;
+
+function area(s: Shape) {
+  switch (s.kind) {
+    case "square": return s.size * s.size;
+    case "rectangle": return s.height * s.width;
+    case "circle": return Math.PI * s.radius ** 2;
+  }
+}
+```
+
+#### 完整性检查
+
+在switch语句中，如果希望对是否涵盖可辨识联合的所有取值进行检查，有两种方法：
+
+1、启用`--strictNullChecks`并且指定一个返回值类型
+
+```typescript
+type Shape = Square | Rectangle | Circle | Triangle;
+
+function area(s: Shape): number { // error: returns number | undefined
+  switch (s.kind) {
+    case "square": return s.size * s.size;
+    case "rectangle": return s.height * s.width;
+    case "circle": return Math.PI * s.radius ** 2;
+  }
+}
+```
+
+2、使用`never`类型，在编译时就可以进行完整性检查
+
+```typescript
+function assertNever(x: never): never { //需要这个额外函数
+  throw new Error("Unexpected object: " + x);
+}
+
+function area(s: Shape) {
+  switch (s.kind) {
+    case "square": return s.size * s.size;
+    case "rectangle": return s.height * s.width;
+    case "circle": return Math.PI * s.radius ** 2;
+    default: return assertNever(s); // error here if there are missing cases
+  }
+}
+```
+

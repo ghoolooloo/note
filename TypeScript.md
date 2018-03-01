@@ -4,13 +4,18 @@
 
 ## TypeScript与ECMAScript
 
-TypeScript是ECMAScript的超集，JavaScript是ECMAScript的实现。
+TypeScript是ECMAScript的超集，它支持JavaScript的所有语法和语义，并且在此之上提供了更多额外的特性。JavaScript是ECMAScript的实现。
 
 ECMAScript的标准发布在 <https://tc39.github.io/ecma262/> 。
 
 [ES6 Fiddle](http://www.es6fiddler.net)：在线运行ES6代码的网站。
 
 [Babel](http://babeljs.io/repl)：在线将ES6脚本转化为ES5脚本。
+
+TypeScript和JavaScript不同的地方有两处：
+
+1. 可选参数：在JavaScript中，调用一个N元函数时可以传递给它小于或等于N个实参，没有传递值的参数自动是可选的；而在TypeScript中，可选参数要显式在参数名末尾附加一个问号。
+2. 在JavaScript中，可以使用空的对象字面量来初始化变量，并使用点号立即附加属性；而在TypeScript中，需要使用方括号。
 
 ## TypeScript vs Dart
 
@@ -563,10 +568,13 @@ let v = new ScientificCalculator(2)
 
 ### var
 
-通过`var`声明的变量总是自动提升为全局的，与它声明的位置无关，这称为**变量提升**。在声明语句之前，提升的变量不会被初始化。在声明语句之后，才会被初始化。
+在函数内部，通过`var`声明的变量的作用域总是整个函数，即使声明位于函数中的某个块内；在全局上下文中，通过`var`声明的变量的作用域总是全局的。这种作用域规则有时又称为**函数作用域**，函数参数也是函数作用域。
+
+在`var`声明之前，可以访问该变量，只不过值是`undefined`。
 
 ```typescript
 function f(shouldInitialize: boolean) {
+  // alert(x);  //允许访问x，但还没初始化，因此x的值为undefined。
   if (shouldInitialize) {
   	var x = 10;
   }
@@ -579,8 +587,6 @@ f(false); // returns 'undefined'
 ```
 
 > 在ES5中，函数定义也会被提升，但ES6中则使用块级作用域。
-
-这种作用域规则有时又称为**函数作用域**，函数参数也是函数作用域。
 
 函数作用域允许多次声明同一个变量，后声明的覆盖之前声明的。但如果先用`let`声明，则不能再用`var`声明同一变量。反之也一样。
 
@@ -660,7 +666,9 @@ for (var i = 0; i < 10; i++) {
 
 ### let
 
-let声明使用的是词法作用域或块作用域。这是let与var的区别之处。
+let声明使用的是词法作用域或**块作用域**，它只在所声明的块中可访问，如果不在任何块中声明，则它的作用域是全局的。这是let与var的区别之处。
+
+不能在同一个块作用域里多次声明同一个变量或常量（不管这些变量原来是var声明、let声明或者函数参数）。在嵌套块作用域中，内层作用域变量会屏蔽同名的外层作用域变量。
 
 拥有块级作用域的变量的另一个特点是，它们不能在被声明之前读或写。
 
@@ -683,8 +691,6 @@ foo();
 
 let a;
 ```
-
-let声明不能在一个作用域里多次声明同一个变量（不管这些变量原来是var声明、let声明或者函数参数）。在嵌套作用域中，内层作用域变量会屏蔽同名的外层作用域变量。
 
 ## 常量
 
@@ -933,11 +939,31 @@ namespace Animals {
 
 ## 外部声明
 
+# 表达式和运算符
 
+## 算术运算符
+
+## 比较运算符
+
+## 逻辑运算符
+
+## 位运算符
+
+## 赋值运算符
+
+## 条件运算符
 
 # 语句
 
+## 条件语句
+
+## 多分支语句
+
 ## 迭代语句
+
+### while循环
+
+### do-while循环
 
 ### 迭代器
 
@@ -945,7 +971,11 @@ namespace Animals {
 
  一些内置的类型如`Array`，`Map`，`Set`，`String`，`Int32Array`，`Uint32Array`等都已经实现了各自的`Symbol.iterator`。 
 
-### for-of迭代
+### for循环
+
+### for-in循环
+
+### for-of循环
 
 for-of语句通过调用可迭代对象上的`Symbol.iterator`方法，来遍历它。
 
@@ -975,7 +1005,7 @@ for (let i in list) {
 
 ## 函数定义
 
-### 命名函数
+### 具名函数
 
 ```typescript
 function add(x: number, y: number): number {
@@ -1827,6 +1857,156 @@ printThis.call([1]); // this引用[1]
 printThis.call([2]); // this引用[2]
 ```
 
+# 泛型
+
+> 注意，无法创建泛型枚举和泛型命名空间。
+
+## 泛型函数
+
+```typescript
+function identity<T>(arg: T): T {
+  return arg;
+}
+
+let output = identity<string>("myString"); 
+```
+
+或者利用类型推断：
+
+```typescript
+let output = identity("myString");
+```
+
+泛型函数的类型：
+
+```typescript
+let myIdentity: <U>(arg: U) => U = identity;
+```
+
+注意：类型变量的名称可以与泛型函数中的不一样。
+
+还可以使用匿名接口的方式来表示泛型函数的类型：
+
+```typescript
+let myIdentity: {<T>(arg: T): T} = identity;
+```
+
+或者
+
+```typescript
+interface GenericIdentityFn {
+  <T>(arg: T): T;
+}
+
+let myIdentity: GenericIdentityFn = identity;
+```
+
+或者
+
+```typescript
+interface GenericIdentityFn<T> {
+  (arg: T): T;
+}
+
+let myIdentity: GenericIdentityFn<number> = identity;
+```
+
+## 泛型变量
+
+在使用类型变量（不带泛型约束）声明的泛型变量时，应该将它们当作是任意类型来使用，而不能使用特定类型的API：
+
+```typescript
+function loggingIdentity<T>(arg: T): T {
+  console.log(arg.length);  // Error: T doesn't have .length
+  return arg;
+}
+```
+
+下面的例子则是正确的：
+
+```typescript
+function loggingIdentity<T>(arg: T[]): T[] {
+  console.log(arg.length);  // Array has a .length, so no more error
+  return arg;
+}
+```
+
+## 泛型类
+
+```typescript
+class GenericNumber<T> {
+  zeroValue: T;
+  add: (x: T, y: T) => T;
+}
+
+let myGenericNumber = new GenericNumber<number>();
+myGenericNumber.zeroValue = 0;
+myGenericNumber.add = function(x, y) { return x + y; };
+```
+
+注意：泛型类指的是实例部分的类型，所以类的静态属性不能使用这个泛型类型。
+
+在TypeScript使用泛型创建工厂函数时，需要引用构造函数的类类型。比如，
+
+```typescript
+function create<T>(c: {new(): T; }): T {
+  return new c();
+}
+```
+
+一个更高级的例子，使用原型属性推断并约束构造函数与类实例的关系。
+
+```typescript
+class BeeKeeper {
+  hasMask: boolean;
+}
+
+class ZooKeeper {
+  nametag: string;
+}
+
+class Animal {
+  numLegs: number;
+}
+
+class Bee extends Animal {
+  keeper: BeeKeeper;
+}
+
+class Lion extends Animal {
+  keeper: ZooKeeper;
+}
+
+function findKeeper<A extends Animal, K> (a: {new(): A; prototype: {keeper: K}}): K {
+  return a.prototype.keeper;
+}
+
+findKeeper(Lion).nametag;  // typechecks!
+```
+
+## 泛型约束
+
+```typescript
+interface Lengthwise {
+  length: number;
+}
+
+function loggingIdentity<T extends Lengthwise>(arg: T): T {
+  console.log(arg.length);  // Now we know it has a .length property, so no more error
+  return arg;
+}
+```
+
+你可以声明一个类型参数，且它被另一个类型参数所约束。比如，
+
+```typescript
+function find<T, U extends Findable<T>>(n: T, s: U) {
+  // ...
+}
+
+find (giraffe, myAnimals);
+```
+
 
 
 # 类型系统
@@ -1853,7 +2033,7 @@ let strLength: number = (someValue as string).length;
 
 ## 类型守卫（Type Guards）
 
-类型守卫就是一些表达式，它们会在运行时检查以确保在某个作用域里的类型。
+类型守卫就是一些表达式，它们会在运行时检查变量是否是某个类型，如果满足，则确保在守卫范围里，该变量自动推断为该类型，而不需要再显式类型转换。
 
 ### 自定义类型守卫
 
@@ -1870,7 +2050,7 @@ interface Fish {
   layEggs();
 }
 
-function isFish(pet: Fish | Bird): pet is Fish {
+function isFish(pet: Fish | Bird): pet is Fish { //pet为Fish时，函数体才会执行
   return (<Fish>pet).swim !== undefined;
 }
 
@@ -2087,7 +2267,7 @@ function getName(n: NameOrResolver): Name {
 }
 ```
 
-声明类型别名不会新建一个类型 - 它创建了一个新名字来引用那个类型。
+声明类型别名不会新建一个类型，只是创建了一个新名字来引用那个类型。
 
 类型别名不能被`extends`和`implements`，即使类型别名引用的是一个接口。
 
@@ -2292,3 +2472,706 @@ function area(s: Shape) {
 }
 ```
 
+# 命名空间
+
+命名空间是位于全局命名空间下的一个普通的带有名字的JavaScript对象。 
+
+命名空间的作用与模块类似。
+
+模块里最好不要嵌套命名空间（即导出命名空间）。
+
+```typescript
+namespace Validation {
+  export interface StringValidator {
+    isAcceptable(s: string): boolean;
+  }
+
+  const lettersRegexp = /^[A-Za-z]+$/; // 不导出，命名空间之外无法访问。
+  const numberRegexp = /^[0-9]+$/;
+
+  export class LettersOnlyValidator implements StringValidator {
+    isAcceptable(s: string) {
+      return lettersRegexp.test(s);
+    }
+  }
+
+  export class ZipCodeValidator implements StringValidator {
+    isAcceptable(s: string) {
+      return s.length === 5 && numberRegexp.test(s);
+    }
+  }
+}
+
+// Some samples to try
+let strings = ["Hello", "98052", "101"];
+
+// Validators to use
+let validators: { [s: string]: Validation.StringValidator; } = {};
+validators["ZIP code"] = new Validation.ZipCodeValidator();
+validators["Letters only"] = new Validation.LettersOnlyValidator();
+
+// Show whether each string passed each validator
+strings.forEach(s => {
+  for (let name in validators) {
+    console.log(`"${ s }" - ${ validators[name].isAcceptable(s) ? "matches" : "does not match" } ${ name }`);
+  }
+});
+```
+
+## 分离到多个文件
+
+当应用变得越来越大时，我们可以将一个命名空间的代码分割到多个文件中。尽管是不同的文件，它们仍是同一个命名空间，并且在使用的时候就如同它们在一个文件中定义的一样。不过要通过编译指令来告诉编译器这些文件之间的关联（而不是使用导入声明）。
+
+Validation.ts：
+
+```typescript
+namespace Validation {
+  export interface StringValidator {
+    isAcceptable(s: string): boolean;
+  }
+}
+```
+
+LettersOnlyValidator.ts
+
+```typescript
+/// <reference path="Validation.ts" />
+namespace Validation {
+  const lettersRegexp = /^[A-Za-z]+$/;
+  export class LettersOnlyValidator implements StringValidator {
+    isAcceptable(s: string) {
+      return lettersRegexp.test(s);
+    }
+  }
+}
+```
+
+ZipCodeValidator.ts
+
+```typescript
+/// <reference path="Validation.ts" />
+namespace Validation {
+  const numberRegexp = /^[0-9]+$/;
+  export class ZipCodeValidator implements StringValidator {
+    isAcceptable(s: string) {
+      return s.length === 5 && numberRegexp.test(s);
+    }
+  }
+}
+```
+
+Test.ts：
+
+```typescript
+/// <reference path="Validation.ts" />
+/// <reference path="LettersOnlyValidator.ts" />
+/// <reference path="ZipCodeValidator.ts" />
+
+// Some samples to try
+let strings = ["Hello", "98052", "101"];
+
+// Validators to use
+let validators: { [s: string]: Validation.StringValidator; } = {};
+validators["ZIP code"] = new Validation.ZipCodeValidator();
+validators["Letters only"] = new Validation.LettersOnlyValidator();
+
+// Show whether each string passed each validator
+strings.forEach(s => {
+  for (let name in validators) {
+    console.log(""" + s + "" " + (validators[name].isAcceptable(s) ? " matches " : " does not match ") + name);
+  }
+});
+```
+
+当涉及到多文件时，我们必须确保所有编译后的代码都被加载了。 我们有两种方式。
+
+第一种方式，把所有的输入文件编译为一个输出文件，需要使用--outFile标记：
+
+```bash
+$ tsc --outFile sample.js Test.ts
+```
+
+编译器会根据源码里的编译指令自动地编译依赖文件，并对输出按正确的顺序进行排序。
+
+第二种方式，我们可以编译每一个文件（默认方式），那么每个源文件都会对应生成一个JavaScript文件。 然后，在页面上通过`<script>`标签把所有生成的JavaScript文件按正确的顺序引进来，比如：
+
+MyTestPage.html：
+
+```html
+<script src="Validation.js" type="text/javascript" />
+<script src="LettersOnlyValidator.js" type="text/javascript" />
+<script src="ZipCodeValidator.js" type="text/javascript" />
+<script src="Test.js" type="text/javascript" />
+```
+
+## 外部命名空间
+
+```typescript
+declare namespace D3 {
+  export interface Selectors {
+    select: {
+      (selector: string): Selection;
+      (element: EventTarget): Selection;
+    };
+  }
+  export interface Event {
+    x: number;
+    y: number;
+  }
+  export interface Base extends Selectors {
+    event: Event;
+  }
+}
+
+declare let d3: D3.Base;
+```
+
+
+
+# 模块
+
+TypeScript与ECMAScript 2015一样，任何包含顶级import或者export的文件都被当成一个模块。
+
+定义在一个模块里的变量，函数，类等等在模块外部是不可见的，除非你明确地使用export导出它们。 相反，如果想使用其它模块导出的变量，函数，类，接口等的时候，你必须要导入它们。
+
+## 导出
+
+### 导出声明
+
+任何声明（比如变量，函数，类，类型别名或接口）都能够通过添加`export`关键字来导出。
+
+```typescript
+export interface StringValidator {
+  isAcceptable(s: string): boolean;
+}
+
+export const numberRegexp = /^[0-9]+$/;
+```
+
+### 导出语句
+
+导出语句要放在相关的声明之后，通常放在最后。
+
+```typescript
+class ZipCodeValidator implements StringValidator {
+  isAcceptable(s: string) {
+    return s.length === 5 && numberRegexp.test(s);
+  }
+}
+
+export { ZipCodeValidator };
+```
+
+可以一次导出多个名字：
+
+```typescript
+export {square, log10, PI};
+```
+
+可以对导出的名字重命名：
+
+```typescript
+export { ZipCodeValidator as mainValidator };
+```
+
+重新导出：
+
+```typescript
+export {ZipCodeValidator as RegExpBasedZipCodeValidator} from "./ZipCodeValidator";
+export * from "./StringValidator";  //重新导出所有名字
+```
+
+重新导出功能并不会在当前模块导入那个模块或定义一个新的局部变量。
+
+### 默认导出
+
+每个模块都可以有一个default导出。 默认导出使用default关键字标记；并且一个模块只能够有一个default导出。
+
+ZipCodeValidator.ts：
+
+```typescript
+export default class ZipCodeValidator {
+  static numberRegexp = /^[0-9]+$/;
+  isAcceptable(s: string) {
+    return s.length === 5 && ZipCodeValidator.numberRegexp.test(s);
+  }
+}
+```
+
+导入default导出时，import后不加花括号：
+
+```typescript
+import validator from "./ZipCodeValidator";
+
+let myValidator = new validator();
+```
+
+默认导出的类和函数的名字可以与导入时不一样。上面导入默认导出时，validate是可以任意取的，而且不能使用花括号包围。如果要使用花括号包围，则应该使用default来作为默认导出的函数的名称，而不能使用它声明的validator：
+
+```typescript
+import {default as validator} from "./ZipCodeValidator";
+```
+
+甚至，默认导出时可以省略类和函数名：
+
+StaticZipCodeValidator.ts：
+
+```typescript
+const numberRegexp = /^[0-9]+$/;
+export default function (s: string) {
+  return s.length === 5 && numberRegexp.test(s);
+}
+```
+
+Test.ts：
+
+```typescript
+import validate from "./StaticZipCodeValidator";  
+// 或者 import {default as validate} from "./StaticZipCodeValidator";  
+
+let strings = ["Hello", "98052", "101"];
+
+// Use function validate
+strings.forEach(s => {
+  console.log(`"${s}" ${validate(s) ? " matches" : " does not match"}`);
+});
+```
+
+默认导出还可以导出一个值：
+
+OneTwoThree.ts：
+
+```typescript
+export default "123";
+```
+
+Log.ts：
+
+```typescript
+import num from "./OneTwoThree";
+
+console.log(num); // "123"
+```
+
+同时导入默认导出和其他导出：
+
+math3.ts：
+
+```typescript
+export default function cube(x) {…}
+export function square(x) {…}
+```
+
+app4.ts：
+
+```typescript
+import cube, {square} from './math3';
+```
+
+### CommonJS和AMD的导出
+
+TypeScript模块支持`export =`语法以支持传统的CommonJS和AMD的工作流模型。
+
+`export =`语法定义一个模块的导出对象。 它可以是类，接口，命名空间，函数或枚举。
+
+ZipCodeValidator.ts：
+
+```typescript
+let numberRegexp = /^[0-9]+$/;
+
+class ZipCodeValidator {
+    isAcceptable(s: string) {
+        return s.length === 5 && numberRegexp.test(s);
+    }
+}
+
+export = ZipCodeValidator;
+```
+
+Test.ts：
+
+```typescript
+import zip = require("./ZipCodeValidator");
+
+// Some samples to try
+let strings = ["Hello", "98052", "101"];
+
+// Validators to use
+let validator = new zip();
+
+// Show whether each string passed each validator
+strings.forEach(s => {
+  console.log(`"${ s }" - ${ validator.isAcceptable(s) ? "matches" : "does not match" }`);
+});
+```
+
+## 导入
+
+导入一个名字：
+
+```typescript
+import { ZipCodeValidator } from "./ZipCodeValidator";
+```
+
+导入多个名字：
+
+```typescript
+import {square, log10} from './math';
+```
+
+导入一个模块中所有名字：
+
+```typescript
+import * from './math';
+```
+
+### 重命名导入
+
+```typescript
+import { ZipCodeValidator as ZCV } from "./ZipCodeValidator";
+import * as validator from "./ZipCodeValidator";
+```
+
+### 具有副作用的导入
+
+尽管不推荐这么做，一些模块会设置一些全局状态供其它模块使用。 这些模块可能没有任何的导出或用户根本就不关注它的导出。 使用下面的方法来导入这类模块：
+
+```typescript
+import "./my-module.js";
+```
+
+### 导入默认导入
+
+### 导入Common和AMD导出
+
+若要导入一个使用了`export =`的模块时，必须使用TypeScript提供的特定语法`import … = require("module")`。
+
+其实，使用导出声明或导出语句的模块，也可以使用这种方式来导入。
+
+## 生成模块代码
+
+根据编译时指定的模块目标参数（例如：`--module commonjs`），编译器会生成相应的供Node.js (CommonJS)，Require.js (AMD)，isomorphic (UMD), SystemJS或ECMAScript 2015 native modules (ES6)模块加载系统使用的代码。
+
+SimpleModule.ts：
+
+```typescript
+import m = require("mod");
+
+export let t = m.something + 1;
+```
+
+AMD / RequireJS SimpleModule.js：
+
+```typescript
+define(["require", "exports", "./mod"], function (require, exports, mod_1) {
+  exports.t = mod_1.something + 1;
+});
+```
+
+CommonJS / Node SimpleModule.js：
+
+```typescript
+let mod_1 = require("./mod");
+
+exports.t = mod_1.something + 1;
+```
+
+UMD SimpleModule.js：
+
+```typescript
+(function (factory) {
+  if (typeof module === "object" && typeof module.exports === "object") {
+    let v = factory(require, exports); if (v !== undefined) module.exports = v;
+  } else if (typeof define === "function" && define.amd) {
+    define(["require", "exports", "./mod"], factory);
+  }
+})(function (require, exports) {
+  let mod_1 = require("./mod");
+  exports.t = mod_1.something + 1;
+});
+```
+
+System SimpleModule.js：
+
+```typescript
+System.register(["./mod"], function(exports_1) {
+  let mod_1;
+  let t;
+  return {
+    setters:[
+      function (mod_1_1) {
+        mod_1 = mod_1_1;
+      }],
+    execute: function() {
+      exports_1("t", t = mod_1.something + 1);
+    }
+  }
+});
+```
+
+Native ECMAScript 2015 modules SimpleModule.js：
+
+```typescript
+import { something } from "./mod";
+
+export let t = something + 1;
+```
+
+## 动态加载
+
+通过`require`调用模块加载器，可以实现按条件动态加载模块，并且还不会损失类型安全（通过`typeof`）。
+
+编译器会检测是否每个模块都会在生成的JavaScript中用到。 如果一个模块标识符只在类型注解部分使用，并且完全没有在表达式中使用时，就不会生成`require`这个模块的代码。
+
+示例：Node.js里的动态模块加载
+
+```typescript
+declare function require(moduleName: string): any;
+
+import { ZipCodeValidator as Zip } from "./ZipCodeValidator";
+
+if (needZipValidation) {
+  let ZipCodeValidator: typeof Zip = require("./ZipCodeValidator");
+  let validator = new ZipCodeValidator();
+  if (validator.isAcceptable("...")) { /* ... */ }
+}
+```
+
+示例：require.js里的动态模块加载
+
+```typescript
+declare function require(moduleNames: string[], onLoad: (...args: any[]) => void): void;
+
+import  * as Zip from "./ZipCodeValidator";
+
+if (needZipValidation) {
+  require(["./ZipCodeValidator"], (ZipCodeValidator: typeof Zip) => {
+    let validator = new ZipCodeValidator.ZipCodeValidator();
+    if (validator.isAcceptable("...")) { /* ... */ }
+  });
+}
+```
+
+示例：System.js里的动态模块加载
+
+```typescript
+declare const System: any;
+
+import { ZipCodeValidator as Zip } from "./ZipCodeValidator";
+
+if (needZipValidation) {
+  System.import("./ZipCodeValidator").then((ZipCodeValidator: typeof Zip) => {
+    var x = new ZipCodeValidator();
+    if (x.isAcceptable("...")) { /* ... */ }
+  });
+}
+```
+
+## 外部模块
+
+要想使用非TypeScript编写的JavaScript库，必须使用`declare`暴露这些库的API。
+
+这些声明通常是在`.d.ts`文件中定义的。
+
+例如：
+
+node.d.ts：
+
+```typescript
+declare module "url" {
+  export interface Url {
+    protocol?: string;
+    hostname?: string;
+    pathname?: string;
+  }
+  export function parse(urlStr: string, parseQueryString?, slashesDenoteHost?): Url;
+}
+
+declare module "path" {
+  export function normalize(p: string): string;
+  export function join(...paths: any[]): string;
+  export let sep: string;
+}
+```
+
+现在我们可以使用编译指令`/// <reference>`来依赖该声明文件，并且使用`import`加载外部模块。
+
+```typescript
+/// <reference path="node.d.ts"/>
+import * as URL from "url";
+
+let myUrl = URL.parse("http://www.typescriptlang.org");
+```
+
+### 外部模块的简写
+
+假如你不想在使用一个新外部模块之前花时间去编写声明，你可以采用声明的简写形式以便能够快速使用它。
+
+```typescript
+declarations.d.ts：
+
+declare module "hot-new-module";
+```
+
+简写模块里所有导出的类型将是`any`。
+
+### 模块声明通配符
+
+某些模块加载器如SystemJS 和AMD支持导入非JavaScript内容。 它们通常会使用一个前缀或后缀来表示特殊的加载语法。 模块声明通配符可以用来表示这些情况。
+
+```typescript
+declare module "*!text" {
+  const content: string;
+  export default content;
+}
+
+// Some do it the other way around.
+declare module "json!*" {
+  const value: any;
+  export default value;
+}
+```
+
+现在你可以就导入匹配"*!text"或"json!*"的内容了。
+
+```typescript
+import fileContent from "./xyz.txt!text";
+import data from "json!http://example.com/data.json";
+
+console.log(data, fileContent);
+```
+
+### UMD模块
+
+有些模块被设计成兼容多个模块加载器，或者不使用模块加载器（全局变量）。 它们以UMD或Isomorphic模块为代表。 这些库可以通过导入的形式或全局变量的形式访问。 
+
+例如：
+
+math-lib.d.ts：
+
+```typescript
+export const isPrime(x: number): boolean;
+
+export as namespace mathLib;
+```
+
+之后，这个库可以在某个模块里通过导入来使用：
+
+```typescript
+import { isPrime } from "math-lib";
+
+isPrime(2);
+mathLib.isPrime(2); // ERROR: can't use the global definition from inside a module
+```
+
+它同样可以通过全局变量的形式使用，但只能在某个脚本里。 （脚本是指一个不带有导入或导出的文件。）
+
+```typescript
+mathLib.isPrime(2);
+```
+
+## 模块解析
+
+共有两种可用的模块解析策略：`Node`和`Classic`。 你可以使用`--moduleResolution`标记指定使用哪种模块解析策略。 若未指定，那么在使用了--module AMD | System | ES2015时的默认值为`Classic`，其它情况时则为`Node`。
+
+根据模块引用是相对的还是非相对的，模块解析策略会以不同的方式解析。
+
+模块导入中，以`/`，`./`或`../`开头的是相对导入。例如：
+
+```typescript
+import Entry from "./components/Entry";
+import { DefaultHeaders } from "../constants/http";
+import "/mod";
+```
+
+所有其它形式的导入被当作非相对的。 例如：
+
+```typescript
+import * as $ from "jQuery";
+import { Component } from "angular2/core";
+```
+
+相对导入解析时是相对于导入它的文件来的，并且不能解析为一个外部模块声明。 你应该为你自己写的模块使用相对导入，这样能确保它们在运行时的相对位置。
+
+非相对模块的导入可以相对于`baseUrl`或通过下文会讲到的路径映射来进行解析。 它们还可以被解析能外部模块声明。 使用非相对路径来导入你的外部依赖。
+
+### Classic解析策略
+
+#### 相对导入的模块
+
+相对导入的模块是相对于导入它的文件进行解析的。 因此`/root/src/folder/A.ts`文件里的`import { b } from "./moduleB"`会使用下面的查找流程：
+
+- /root/src/folder/moduleB.ts
+- /root/src/folder/moduleB.tsx
+- /root/src/folder/moduleB.d.ts
+
+#### 非相对导入的模块
+
+非相对模块的导入，编译器则会从包含导入文件的目录开始依次向上级目录遍历。因此`/root/src/folder/A.ts`文件里的`import { b } from "moduleB"`会使用下面的查找流程：
+
+- /root/src/folder/moduleB.ts
+- /root/src/folder/moduleB.tsx
+- /root/src/folder/moduleB.d.ts
+- /root/src/moduleB.ts
+- /root/src/moduleB.tsx
+- /root/src/moduleB.d.ts
+- /root/moduleB.ts
+- /root/moduleB.tsx
+- /root/moduleB.d.ts
+- /moduleB.ts
+- /moduleB.tsx
+- /moduleB.d.ts
+
+### Node解析策略
+
+#### 相对导入的模块
+
+比如，有一个导入语句`import { b } from "./moduleB"`在`/root/src/moduleA.ts`里，会以下面的流程来定位`"./moduleB"`：
+
+- /root/src/moduleB.ts
+- /root/src/moduleB.tsx
+- /root/src/moduleB.d.ts
+- /root/src/moduleB/package.json (如果指定了"typings"属性)
+- /root/src/moduleB/index.ts
+- /root/src/moduleB/index.tsx
+- /root/src/moduleB/index.d.ts
+
+#### 非相对导入的模块
+
+假设`/root/src/moduleA.js`里使用的是非相对路径导入`var x = require("moduleB");`。会以下面的顺序去解析`moduleB`：
+
+- /root/src/node_modules/moduleB.ts
+- /root/src/node_modules/moduleB.tsx
+- /root/src/node_modules/moduleB.d.ts
+- /root/src/node_modules/moduleB/package.json (如果指定了"typings"属性)
+- /root/src/node_modules/moduleB/index.ts
+- /root/src/node_modules/moduleB/index.tsx
+- /root/src/node_modules/moduleB/index.d.ts 
+- /root/node_modules/moduleB.ts
+- /root/node_modules/moduleB.tsx
+- /root/node_modules/moduleB.d.ts
+- /root/node_modules/moduleB/package.json (如果指定了"typings"属性)
+- /root/node_modules/moduleB/index.ts
+- /root/node_modules/moduleB/index.tsx
+- /root/node_modules/moduleB/index.d.ts 
+- /node_modules/moduleB.ts
+- /node_modules/moduleB.tsx
+- /node_modules/moduleB.d.ts
+- /node_modules/moduleB/package.json (如果指定了"typings"属性)
+- /node_modules/moduleB/index.ts
+- /node_modules/moduleB/index.tsx
+- /node_modules/moduleB/index.d.ts
+
+### 额外的模块解析标记
+
+#### Base URL
+
+#### 路径映射
+
+#### 利用`rootDirs`指定虚拟目录
+
+### 跟踪模块解析——`--traceResolution`
+
+# 装饰器
+
+ES2015中，装饰器只能装饰类、属性、方法、存取器，而TypeScript还可以装饰函数、参数。

@@ -91,6 +91,8 @@ $ tsc hello.ts
 $ node hello.js
 ```
 
+> 由于node.js没有浏览器DOM支持，因此执行上面命令将报“document is not defined”错误。改成用`console.log()`输出。
+
 如果要直接运行typescript脚本，可以使用`ts-node`模块：
 
 ```bash
@@ -568,13 +570,13 @@ let v = new ScientificCalculator(2)
 
 ### var
 
-在函数内部，通过`var`声明的变量的作用域总是整个函数，即使声明位于函数中的某个块内；在全局上下文中，通过`var`声明的变量的作用域总是全局的。这种作用域规则有时又称为**函数作用域**，函数参数也是函数作用域。
+在函数、模块、命名空间或全局作用域内部，通过var声明的变量的作用域总是包含它的整个函数、模块、命名空间或全局作用域，而不管声明是否位于某个块内。这种作用域规则有时又称为函数作用域，函数参数也是函数作用域。
 
 在`var`声明之前，可以访问该变量，只不过值是`undefined`。
 
 ```typescript
 function f(shouldInitialize: boolean) {
-  // alert(x);  //允许访问x，但还没初始化，因此x的值为undefined。
+  // alert(x);  //允许在x声明之前读或写它，但它还没初始化，因此x此时的值为undefined。
   if (shouldInitialize) {
   	var x = 10;
   }
@@ -666,9 +668,36 @@ for (var i = 0; i < 10; i++) {
 
 ### let
 
-let声明使用的是词法作用域或**块作用域**，它只在所声明的块中可访问，如果不在任何块中声明，则它的作用域是全局的。这是let与var的区别之处。
+let声明使用的是词法作用域或**块作用域**，它只在所声明的块（例如：块语句、函数体、模块、命名空间等）中可访问，如果不在任何块中声明，则它的作用域是全局的。这是let与var的区别之处。
 
-不能在同一个块作用域里多次声明同一个变量或常量（不管这些变量原来是var声明、let声明或者函数参数）。在嵌套块作用域中，内层作用域变量会屏蔽同名的外层作用域变量。
+不能在同一个块作用域里多次声明同一个变量或常量（不管这些变量原来是var声明、let声明或者函数参数）。
+
+```typescript
+function f(x) {
+  let x = 100; // error: interferes with parameter declaration
+}
+
+function g() {
+  let x = 100;
+  var x = 100; // error: can't have both declarations of 'x'
+}
+```
+
+在嵌套块作用域中，内层作用域变量会屏蔽同名的外层作用域变量。
+
+```typescript
+function f(condition, x) {
+  if (condition) {
+    let x = 100;
+    return x;
+  }
+
+  return x;
+}
+
+f(false, 0); // returns 0
+f(true, 0);  // returns 100
+```
 
 拥有块级作用域的变量的另一个特点是，它们不能在被声明之前读或写。
 
@@ -700,7 +729,7 @@ const numLivesForCat = 9;
 
 `const`声明是使用块级作用域。
 
-## 别名
+## 别名*
 
 可以使用`import`来给任意标识符创建别名，也包括导入的模块中的对象。
 
@@ -716,13 +745,13 @@ import polygons = Shapes.Polygons;
 let sq = new polygons.Square(); // Same as "new Shapes.Polygons.Square()"
 ```
 
-这与使用`var`相似，但它还适用于类型和导入的具有命名空间含义的符号。 重要的是，对于值来讲，`import`会生成与原始符号不同的引用，所以改变别名的`var`值并不会影响原始变量的值。
+这与使用`var`相似，但它还适用于类型和导入的具有命名空间含义的符号。 重要的是，对于值来讲，`import`会生成与原对象不同的引用，所以改变别名的属性值并不会影响原对象的属性值。
 
 ## 解构
 
 解构类似于其他语言中的模式匹配。
 
-解构数组：
+### 解构数组
 
 ```typescript
 let input = [1, 2];
@@ -748,6 +777,14 @@ function f([first, second]: [number, number]) {
 f(input);
 ```
 
+可以在数组里使用`...`语法创建剩余变量：
+
+```typescript
+let [first, ...rest] = [1, 2, 3, 4];
+console.log(first); // outputs 1
+console.log(rest); // outputs [ 2, 3, 4 ]
+```
+
 可以忽略你不关心的尾随元素：
 
 ```typescript
@@ -761,7 +798,7 @@ console.log(first); // outputs 1
 let [, second, , fourth] = [1, 2, 3, 4];
 ```
 
-也可以解构对象：
+### 解构对象
 
 ```typescript
 let o = {
@@ -773,35 +810,22 @@ let o = {
 let {a, b} = o;
 ```
 
-就像数组解构，你可以用没有声明的赋值：
+就像数组解构，你可以不经过声明就直接赋值：
 
 ```typescript
 ({a, b} = {a: "baz", b: 101});
 ```
 
-注意，我们需要用括号将它括起来，因为Javascript通常会将以 { 起始的语句解析为一个块。
+>  注意，我们需要用括号将它括起来，因为Javascript通常会将以 `{` 起始的语句解析为一个块。
 
-解构也可用于函数声明中：
-
-```typescript
-type C = {a: string, b?: number}
-
-function f({a, b}: C): void {
-  // ...
-}
-```
-
-### `...变量
-
-可以使用`...变量`语法创建一个剩余变量列表：
+可以在对象里使用`...`语法创建剩余变量：
 
 ```typescript
-let [first, ...rest] = [1, 2, 3, 4];
-console.log(first); // outputs 1
-console.log(rest); // outputs [ 2, 3, 4 ]
+let { a, ...passthrough } = o;
+let total = passthrough.b + passthrough.c.length;
 ```
 
-### 属性别名
+#### 属性别名
 
 可以给属性以不同的名字：
 
@@ -809,13 +833,13 @@ console.log(rest); // outputs [ 2, 3, 4 ]
 let {a: newName1, b: newName2} = o;
 ```
 
-这里“:”不是指示类型，而是表示表示别名。即newName1是a的别名。上面的语句，加上类型指示，则变成：
+这里“:”不是指示类型，而是表示表示别名。即`newName1`是`a`的别名。上面的语句，加上类型指示，则变成：
 
 ```typescript
 let {a: newName1, b: newName2}: {a: string, b: number} = o;
 ```
 
-### 默认值
+#### 默认值
 
 默认值可以让你在属性为 `undefined` 时使用缺省值：
 
@@ -826,6 +850,63 @@ function keepWholeObject(wholeObject: {a: string, b?: number}) {
 ```
 
 当`b`为 `undefined`时，使用默认值`1001`。
+
+### 函数声明中的解构
+
+解构也能用于函数声明。
+
+```typescript
+type C = { a: string, b?: number }
+
+function f({ a, b = 0 }: C = { a: "" }): void {
+    // ...
+}
+// 或者
+//function f({ a, b } = { a: "", b: 0 }): void {
+    // ...
+//}
+
+f({ a: "yes" }); // ok, default b = 0
+f(); // ok, default to {a: ""}, which then defaults b = 0
+f({}); // error, 'a' is required if you supply an argument
+```
+
+## 展开
+
+展开操作符正与解构相反。 它允许你将一个数组展开为另一个数组，或将一个对象展开为另一个对象。 例如：
+
+```typescript
+let first = [1, 2];
+let second = [3, 4];
+let bothPlus = [0, ...first, ...second, 5];
+```
+
+这会令`bothPlus`的值为`[0, 1, 2, 3, 4, 5]`。 展开操作创建了 `first`和`second`的一份浅拷贝。
+
+还可以展开对象：
+
+```typescript
+let defaults = { food: "spicy", price: "$$", ambiance: "noisy" };
+let search = { ...defaults, food: "rich" };
+```
+
+`search`的值为`{ food: "rich", price: "$$", ambiance: "noisy" }`。在展开时，如果存在同名属性（例如：`food`属性），则后面的属性会覆盖前面的属性。
+
+展开对象时，只会将对象自身的可枚举属性展开到当前位置，而不包含它的方法：
+
+```typescript
+class C {
+  p = 12;
+  m() {
+  }
+}
+let c = new C();
+let clone = { ...c };
+clone.p; // ok
+clone.m(); // error!
+```
+
+TypeScript编译器不允许展开泛型函数上的类型参数。 这个特性会在TypeScript的未来版本中考虑实现。
 
 ## 声明合并
 

@@ -312,6 +312,54 @@ final double CM_PER_INCH = 2.54;
 
 # 数组
 
+数组本质上是一组连续存储、类型相同的变量。
+
+## 一维数组
+
+### 创建数组
+
+#### 数组声明
+
+数组声明的一般形式：
+
+```java
+类型[] 数组变量;
+类型 数组变量[];
+```
+
+
+
+#### 数组实例化
+
+声明了数组变量后，实际上该数组并不存在。还需要使用`new`运算符为该数组分配内存空间，并赋值给该数组变量：
+
+```java
+数组变量 = new 类型[元素数量];
+```
+
+在Java中，所有数组都是动态分配的。
+
+数组声明和实例化可以同时进行：
+
+```java
+类型[] 数组变量 = new 类型[元素数量];
+类型 数组变量[] = new 类型[元素数量];
+```
+
+
+
+#### 数组初始化
+
+数组在使用`new`实例化过程中，会将所有数组元素自动初始化为`0` （数值类型、字符类型）、`false` （布尔类型）或`null` （引用类型）。
+
+也可以显式将数组元素初始化为特定值。
+
+### 使用数组
+
+#### 访问数组元素
+
+
+
 ## 数组工具类
 
 ### 打印数组
@@ -633,6 +681,16 @@ if (yourSales >= target) {
 
 ![if](resources/Java/if.png)
 
+> 注意：`if(…) int i = 1;`是非法的，而要使用：
+>
+> ```java
+> if (…) {
+> 	int i =1;
+> }
+> ```
+>
+> if语句和循环语句不能只带单条声明语句，但可以将单条声明语句放在块中。这可能是因为声明语句必须与作用域关联，而作用域是由块创建的。
+
 #### 嵌套的if语句
 
 当if语句出现嵌套时，要记住：`else`语句总是与位于同一代码块中最邻近的`if`配对。
@@ -888,25 +946,126 @@ for (int x : nums) {
 
 break语句用于退出循环语句和switch语句。
 
-执行到break语句，将跳出它所在的循环或switch语句，并从紧跟该循环或switch语句的第一条语句处开始执行。
+当执行完break语句后，控制流将跳出break语句所在的循环或switch语句，并从紧跟该循环或switch语句的第一条语句处开始执行。
 
-如果在一系列嵌套的循环或switch语句中使用break语句，那么break语句只会中断**当前层**的循环或switch语句，不会中断任何外层的循环或switch语句。
+如果在一系列嵌套的循环或switch语句中使用break语句，那么break语句只会中断**break语句所在层**的循环或switch语句，不会中断任何外层的循环或switch语句。
+
+```java
+for (int i=0; i<3; i++) {
+  System.out.print("Pass " + i + ": ");
+  for (int j=0; j<100; j++) {
+    if (j == 10) break; //只会中断当前所在循环，对外层循环没有影响。
+    System.out.print(j + " ");
+  }
+  System.out.println();
+}
+```
 
 > 记住：break语句的设计初衷并不是提供一种终止循环的正常手段，终止循环是条件表达式的目标。只有当发生某些特殊情况时，才应当使用break语句取消循环。
 
 ### 带标签的break语句
 
-与break语句不同，带标签的break语句可以中断任何种类的块，不只局限在循环和switch语句，但它只能中断命名块（即在块之前带一个标签）。它跳出所指定标签的命名块，并从紧跟该命名块的第一条语句处开始执行。这意味着可以使用带标签的break语句退出一系列嵌套的代码块，而且。
+Java还提供了一种带标签的break语句，用于跳出多重嵌套块。
+
+与break语句不同，带标签的break语句不仅可以中断循环和switch语句，而且还可以中断其他块语句，只要它们是命名块（即在块之前带一个标签）。
+
+命名块的一般形式：
+
+```java
+标签: 语句
+```
+
+带标签的break语句的一般形式：
+
+```java
+break 标签;
+```
+
+当执行完带标签的break语句之后，控制流将跳出break语句的标签所指定的命名块，并从紧跟该命名块的第一条语句处开始执行。
+
+```java
+boolean t = true;
+
+first: {
+  second: {
+    third: {
+      System.out.println("Before the break.");
+      if (t) break second; //中断second块
+      System.out.println("This won't execute.");
+    }
+    System.out.println("This won't execute.");
+  }
+  System.out.println("This is after second block."); //中断后，跳到这里开始执行。
+}
+```
+
+带标签的break语句也必须包含在所中断的命名块中，既可以是直接包含在所中断命名块中，也可以是在所中断命名块的任意深度的嵌套块中。带标签的break语句不能中断不包含它的命名块。
+
+带标签的break语句最常见用途之一是退出嵌套的循环：
+
+```java
+outer: for (int i=0; i<3; i++) {
+  System.out.print("Pass " + i + ": ");
+  for (int j=0; j<100; j++) {
+    if (j == 10) break outer;
+    System.out.print(j + " ");
+  }
+  System.out.println("This will not print.");
+}
+System.out.println("Loops complete.");  //中断后，跳到这里开始执行。
+```
+
+
 
 ### continue语句
 
-continue语句只用于退出循环语句。
+continue语句只用于循环语句中。
 
-#### 带标签的continue语句
+当执行完continue语句后，控制流将提前终止本次迭代，并开始执行下一次迭代。在while和do-while循环中，continue语句导致程序执行控制被直接跳转到控制循环的`条件表达式`处。在for循环中，程序的执行控制首先进入for语句的`迭代`部分，然后到达`迭代条件`处。
+
+```java
+for (int i=0; i<10; i++) {
+  System.out.print(i + " ");
+  if (i%2 == 0) continue;
+  System.out.println("");
+}
+```
+
+如果在一系列嵌套的循环语句中使用continue语句，那么continue语句只会中断**continue语句所在层**的循环的本次迭代，不会中断任何外层的循环的迭代。
+
+### 带标签的continue语句
+
+与带标签的break语句不同，带标签的continue语句仍只能用于带标签的循环语句中，不能用于其他命名块。
+
+带标签的continue语句会提前终止指定标签的循环语句的本次迭代，并开始执行下一次迭代。
+
+```java
+outer: for (int i=0; i<10; i++) {
+  for (int j=0; j<10; j++) {
+    if (j > i) {
+      System.out.println();
+      continue outer;
+    }
+    System.out.print(" " + (i * j));
+  }
+}
+System.out.println();
+```
 
 
 
 ### return语句
+
+return语句只出现在方法中，表示要显式地从方法返回。也就是说，return语句导致程序的执行控制转移到方法的调用者。
+
+return语句的一般形式：
+
+```java
+return;  //用于返回类型是void的方法中
+return 返回表达式;
+```
+
+
 
 ### throw语句
 
@@ -920,7 +1079,7 @@ Java中没有全局的函数，只有定义在类中的方法。
 
 ## 运算符
 
-Java的运算符都是内置的，不能自定义新的运算符。
+Java的运算符都是内置的，不能自定义新的运算符，也不能重载已有的运算符。
 
 大部分运算符只能操作基本类型，但`=`、`==`和`!=`能操作所有对象。此外，`String`类支持`+`和`+=`。
 
@@ -1131,6 +1290,18 @@ Student s2 = (Student) p2; //可以转换，因为p2里实际放的是一个Stud
 
 # 断言
 
+# 大数值
+
+如果基本的整数和浮点数精度不能够满足需求， 那么可以使用`java.math` 包中的两个很有用的类： `Biglnteger` 和`BigDecimaL` 这两个类可以处理包含任意长度数字序列的数值。`Biglnteger` 类实现了任意精度的整数运算， `BigDecimal` 实现了任意精度的浮点数运算。
+
+使用静态的`valueOf` 方法可以将普通的数值转换为大数值：
+
+```java
+BigInteger a = BigInteger.valueOf(100);
+```
+
+
+
 # 正则表达式
 
 # 并发编程
@@ -1143,24 +1314,11 @@ Student s2 = (Student) p2; //可以转换，因为p2里实际放的是一个Stud
 
 # 元编程
 
-# 预处理指令
+
 
 # 模块
 
 # 构建管理
-
-# 测试
-
-
-
-
-
-注意：if(…) int i = 1;是非法的，而要使用：
-if (…) {
-
-int i =1;
-
-}
 
 
 

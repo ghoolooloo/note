@@ -163,7 +163,13 @@ Java源文件编译后，会生成字节码文件：`Hello.class`。
 > $ javac -encoding utf-8 D:/com/ghoolooloo/java/Welcome.java
 > ```
 
-> javac在编译一个类时，也会自动编译该类依赖的类。
+> javac在编译一个类时，也会自动编译该类依赖的类。而且，已编译的依赖的源文件有更新，则会自动重新编译这个依赖。
+>
+> 另外，javac一次可以编译多个源文件，例如：
+>
+> ```bash
+> $ javac A.java B.java *Test.java
+> ```
 
 #### 链接
 
@@ -184,10 +190,10 @@ $ java -cp . Hello
 在运行程序时，可以将命令行参数直接跟在程序后面就可以了，如果有多个命令行参数，则使用空格分隔。如：
 
 ```bash
-$ java com.ghoolooloo.java.CommandLineParameters -h Tom Rose Mary
+$ java com.ghoolooloo.java.CommandLineParameters -h these are parameters
 ```
 
-应用程序的命令行参数会传递到`main`方法的字符串数组`args`中。`arg[0]`存放第一个参数（即`"Tom"`），以此类推。如果没有命令行参数，则`args`的长度为`0`，而不是`null`。
+应用程序的命令行参数会传递到`main`方法的字符串数组`args`中。`arg[0]`存放第一个参数（即`"these"`），以此类推。如果没有命令行参数，则`args`的长度为`0`，而不是`null`。
 
 ### 调试
 
@@ -280,6 +286,8 @@ Java语言中空类型使用`void`表示。
 # 声明
 
 声明属于语句。
+
+> 这里的声明主要是指块作用域中的声明，类作用域中的声明参见“字段声明”。
 
 ## 变量声明
 
@@ -1385,7 +1393,7 @@ Java的运算符都是内置的，不能自定义新的运算符，也不能重�
 
 类定义了一种新的数据类型，它是Java面向对象的基础。
 
-类抽象了具有相同数据（即状态）和行为的对象。因此，类是对象的模板，对象是类的实例（instance）。对象的状态是抽象为类的实例字段（instance field），对象的行为是由类的可调用的方法定义的。
+类抽象了具有相同数据（即状态）和行为的对象。因此，类是对象的模板，对象是类的实例（instance）。对象的状态抽象为类的实例字段（instance field），对象的行为是由类的可调用的方法定义的。
 
 > 在Java中，并不是所有类都具有面向对象特征。例如，`Math`类只封装了功能，没有状态。
 
@@ -1395,14 +1403,51 @@ Java的运算符都是内置的，不能自定义新的运算符，也不能重�
 
 ```java
 类修饰符 class 类名 扩展的基类 实现的接口 {
+  初始化块
   构造器定义
   字段声明
   方法定义
   内部类定义
   内部接口定义
-  初始化块
 }
 ```
+
+其中，字段和方法统称为类的成员。
+
+类定义示例：
+
+```java
+class Employee {
+  private String name;
+  private double salary;
+  private LocalDate hireDay;
+
+  public Employee (String n, double s, int year, int month, int day) {
+    name = n;
+    salary = s;
+    hireDay = LocalDate.of(year, month, day);
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public double getSalary() {
+    return salary;
+  }
+  
+  public LocalDate getHireDay() {
+    return hireDay;
+  }
+
+  public void raiseSalary(double byPercent) {
+    double raise = salary * byPercent / 100;
+    salary += raise;
+  }
+}
+```
+
+#### 类的访问控制
 
 ### 对象变量声明
 
@@ -1439,6 +1484,22 @@ if (deadline != null)
 
 局部变量不会自动地初始化为`null`，而必须通过调用`new` 或将它们设置为`null` 进行初始化。
 
+> 很多人错误地认为Java 对象变量与C++ 的引用类似。然而， 在C++ 中没有空引用， 并且引用不能被赋值。可以将Java 的对象变量看作C++ 的对象指针。例如，
+>
+> ```java
+> Date birthday; // Java
+> ```
+>
+> 实际上， 等同于
+>
+> ```c++
+> Date* birthday; // C++
+> ```
+>
+> 在Java 中的null 引用对应C++ 中的NULL 指针。
+>
+> 在C++ 中，指针十分令人头疼，并常常导致程序错误。稍不小心就会创建一个错误的指针， 或者造成内存溢出。在Java 语言中，这些问题都不复存在。如果使用一个没有初始化的指针，运行系统将会产生一个运行时错误，而不是生成一个随机的结果。同时，不必担心内存管理问题，垃圾收集器将会处理相关的事宜。
+
 ### 类实例化——构造对象
 
 一旦定义了一个类，就可以使用这种新的类型创建该类型的对象。
@@ -1455,6 +1516,60 @@ new 构造器名();  //使用默认构造器构造实例
 > `new`运算符的返回值实际上是一个引用。
 
 #### 构造器
+
+##### 无参构造器
+
+##### 构造器的访问控制
+
+#### 初始化块
+
+### 字段
+
+#### 实例字段
+
+#### 类字段（静态字段）
+
+#### 字段的访问控制
+
+### 方法
+
+#### 实例方法
+
+#### 类方法（静态方法）
+
+#### 方法参数
+
+##### 参数传递
+
+##### 可变长度参数
+
+#### 返回值
+
+#### 递归
+
+#### 方法的访问控制
+
+#### 方法重载
+
+### `this`关键字
+
+### 内部类
+
+### 嵌套类
+
+### 对象析构——`finalize()`方法
+
+## 继承
+
+### `super`关键字
+
+### 方法重写和多态
+
+### `final`修饰符
+
+## 抽象类
+
+## `Object`类
 
 ## 对象包装器
 
@@ -1674,6 +1789,8 @@ BigInteger a = BigInteger.valueOf(100);
 # 国际化和本地化
 
 ## 日期和时间
+
+《核心》P98-103
 
 # 元编程
 

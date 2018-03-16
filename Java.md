@@ -653,6 +653,243 @@ System.out.println(Arrays.deepToString(twoD));  //[[0], [1, 2], [3, 4, 5], [6, 7
 
 在很多语言中，包括C/C++，字符串是作为字符数组实现的。然而，在Java中不是如此。在Java中，字符串实际上是一个对象（`String`类的实例）。
 
+`String`类型的对象是不可变的，一旦创建一个`String`对象，其内容就不能再改变。
+
+不可变字符串有一个优点：编译器可以让字符串共享。
+
+> 这里是`String`对象不可变，不是指引用它的`String`变量不可变。
+
+## 构造字符串
+
+```java
+String myString = "This is a string";
+
+char[] chars = {'a', 'b', 'c'};
+String s = new String(chars);
+```
+
+### 空串与`null`串
+
+空串是长度为0的字符串：
+
+```java
+String emptyString = new String();  //空串
+String emptyString2 = "";  //空串字面量
+```
+
+可以调用以下代码检查一个字符串是否为空：
+
+```java
+if (str.length() == 0) …
+//或者
+if (str.equals("")) …
+```
+
+`String` 变量还可以存放一个特殊的值， 名为`null` , 这表示目前没有任何对象与该变量关联。要检查一个字符串是否为`null` , 要使用以下条件：
+
+```java
+if (str == null)
+```
+
+有时要检查一个字符串既不是`null` 也不为空串，这种情况下就需要使用以下条件：
+
+```java
+if (str != null && str.length() != 0)  //首先要检查str不为null。
+```
+
+## 使用字符串
+
+### 字符串的长度
+
+字符串的长度是指字符串所包含字符的数量。在Java中，可以通过调用`length()`方法来获得字符串中代码单元的数量，而调用`codePointCount()`则获得码点的数量：
+
+```java
+String greeting = "Hello";
+int n = greeting.length();  //n=5
+int cpCount = greeting.codePointCount(0, greeting.length());  //cpCount=5
+```
+
+### 拼接
+
+Java 语言允许使用`+` 号连接（拼接）两个字符串：
+
+```java
+int age = 9;
+String s = "He is " + age + " years old.";
+```
+
+当将一个字符串与一个非字符串的值进行拼接时，后者被转换成字符串。
+
+如果需要使用一个分隔符将多个字符串拼接在一起，可以使用静态的`join`方法：
+
+```java
+String all = String.join(" / ", "S", "M", "L", "XL");  //"S / M / L / XL
+```
+
+另外，`concat`方法与`+`执行相同的功能。
+
+### 提取字符
+
+调用`charAt(n)`将返回位置`n`的代码单元，而调用`codePointAt()`将获得指定位置的码点：
+
+```java
+String greeting = "Hello";
+
+//获取第一个代码单元
+char first = greeting.charAt(0);
+
+//获得第i个码点
+int index = greeting.offsetByCodePoints(0, i);
+int cp = greeting.codePointAt(index);
+```
+
+如果想要遍历一个字符串，并且依次査看每一个码点，可以使用下列语句：
+
+```java
+int cp = sentence.codePointAt(i);
+if (Character.isSupplementaryCodePoint(cp)) i += 2;
+else i++;
+```
+
+可以使用下列语句实现回退操作：
+
+```java
+i--；
+if (CharacterssSurrogate(sentence.charAt(i))) i--;
+int cp = sentence.codePointAt(i);
+```
+
+### 比较字符串
+
+```  java
+"Hello".equals("hello")  //比较两个字符串的内容是否相等，区分大小写
+"Hello".equalsIgnoreCase("hello")  //比较两个字符串的内容是否相等，不区分大小写
+ "Hello" == "hello"  //比较两个字符串是否放置在相同位置上
+```
+
+> C++的`==`与Java的`equals`方法类似。C使用`strcmp`函数比较字符串，它与Java的`compareTo`方法类似。
+
+`regionMatches`方法可以比较字符串中的某个特定部分与另一个字符串中的某个特定部分。
+
+`startsWith`方法确定给定的String对象是否以指定的字符串开始，`endsWith`方法确定String对象是否以指定的字符串结尾：
+
+```java
+"Foobar".startsWith("Foo")    //true
+"Foobar".startsWith("bar", 3) //true
+"Foobar".endsWith("bar")      //true
+```
+
+`compareTo`方法会根据字典顺序比较两个字符串的排序。例如：`str1.compareTo(str2)`。如果`str1`按字典顺序位于`str2`之前，则结果小于0；如果`str1`位于`str2`之后，则结果大于0；如果两个字符串相等，则结果等于0。
+
+`compareTo`是考虑大小写的，如果希望忽略大小写区别，可以使用`compareToIgnoreCase`方法。
+
+### 查找字符串
+
+`indexOf`方法查找字符或子串第一次出现时的索引；`lastIndexOf`方法查找字符或子串最后一次出现的索引。
+
+### 修改字符串
+
+`String`对象是不可改变的，这里的修改字符串，实现上是将修改的结果作为一个新字符串返回。
+
+#### 子串
+
+`substring`方法可以提取子串。
+
+#### 替换
+
+`replace`方法可以将字符串的一个字符全部用另一个字符替换，也可以将字符串的一个字符序列全部使用另一个字符序列替换：
+
+```java
+String s = "Hello".replace('l', 'w');  //s="Hewwo"
+```
+
+`replaceAll`方法可以将字符串中匹配指定正则表达式的子串全部替换为另一个子串，`replaceFirst`方法可以将字符串中第一个匹配指定正则表达式的子串替换为另一个子串。
+
+#### 移除开头和结尾的空白字符
+
+可以使用`trim`方法移除字符串开头和结尾的空白字符：
+
+```java
+String s = "   Hello world    ".trim();   //s="Hello world"
+```
+
+#### 大小写转换
+
+方法`toLowerCase`将字符串中所有字符从大写改为小写，方法`toUpperCase`将字符串中所有字符从小写改为大写。非字母字符不受影响。
+
+### 转换数据
+
+#### `toString()`和`valueOf()`
+
+`toString()`方法定义在`Object`类中，各子类可以重写它，以实现将各自类型对象转换成字符串。
+
+`print()`和`println()`在打印对象时，实际上是打印它们调用`toString()`后的结果。
+
+`valueOf`方法是静态方法，实际上调用`valueOf`方法，最终都是调用`toString`方法。
+
+#### 字符串与数组
+
+下面的代码将字符串转换为一个码点数组（每个`int`值对应一个码点）：
+
+```java
+int[] codePoints = str.codePoints().toArray()；
+```
+
+反之， 要把一个码点数组转换为一个字符串， 可以使用构造器：
+
+```java
+String str = new String(codePoints, 0, codePoints.length);
+```
+
+要将字符串转换为一个代码单元数组（每个`char`值对应一个代码单元）：
+
+```java
+char[] chars = str.toCharArray();
+```
+
+另外，有一个`getChars`方法可以提取一个子串中的代码单元到一个数组中：
+
+```java
+String s = "This is a demo of the getChars method.";
+int start = 10;
+int end = 14;
+char buf[] = new char[end - start];
+s.getChars(start, end, buf, 0);
+```
+
+还可以将字符串转换为一个字节数组，使用`getBytes`方法。当将`String`值导出到不支持16位Unicode字符的环境中时，最常用`getBytes`方法。
+
+## StringBuffer
+
+`StringBuffer`支持可变的字符串，并且，它可以应用在多线程环境中。
+
+在构造`StringBuffer`时，通常会预先分配比实际需要更多的空间，以减少再次分配空间的次数。因为，再次分配空间是很耗时的操作。而且，频繁分配空间容易产生内存碎片。
+
+可以通过`ensureCapacity`方法，在创建`StringBuffer`对象后，显式预先分配指定空间。
+
+可以通过`length`方法来获得`StringBuffer`对象当前包含的代码单元数量，而通过`capacity`方法来获得已分配的容量。
+
+可以使用`setLength(len)`强制将`StringBuffer`对象的长度设置为`len`，并且`len`必须是非负。如果`len`比原字符串长度大，则会向末尾添加`null`；如果`len`比原字符串长度小，则超出新长度的字符将丢失。
+
+使用`setCharAt`方法可以设置`StringBuffer`对象中某个字符的值。
+
+`append`方法将各种其他类型数据的字符串表示形式添加到`StringBuffer`对象的末尾。
+
+`insert`方法将一个字符串插入到另一个字符串指定偏移量之后：
+
+```java
+StringBuffer sb = new StringBuffer("I Java!");
+sb.insert(2, "like ");  //sb="I like Java!"
+```
+
+
+
+## StringBuilder
+
+`StringBuilder`也支持可变的字符串，但是，它适合在单线程环境中。它的效率比`StringBuffer`高一些。
+
+其他参见`StringBuffer`。
+
 # 枚举类型
 
 # 表达式
@@ -1398,7 +1635,7 @@ Java的运算符都是内置的，不能自定义新的运算符，也不能重�
 }
 ```
 
-其中，字段和方法统称为类的成员。
+其中，字段、方法、嵌套类、嵌套接口统称为类的成员。
 
 类定义示例：
 
@@ -1606,6 +1843,23 @@ class Employee {
 ```
 
 在这个示例中，无论使用哪个构造器构造对象，`id` 字段都在实例初始化块中被初始化。首先运行初始化块，然后才运行构造器。
+
+> 有一个称为“双括号初始化” （double brace initialization）的技巧，利用了匿名类和初始化块。下面的代码：
+>
+> ```java
+> ArrayList<String> friends = new ArrayList<>()；
+> friends,add("Harry")；
+> friends,add("Tony") ;
+> invite(friends);
+> ```
+>
+> 可以简化为：
+>
+> ```java
+> invite(new ArrayList<String>() {{ add("Harry"); add("Tony"); }});
+> ```
+>
+> 这里外花括号创建了`ArrayList`的一个匿名子类，而内层花括号则是一个实例初始化块。
 
 ##### 静态初始化块
 
@@ -1877,6 +2131,14 @@ public static final double PI = 3.14159265358979323846;  //参见“final字段�
 
 静态方法不能以任何方式引用`this`和`super`。
 
+> 在静态方法中，不能直接使用`getClass()`来获得当前类的类名。因为，调用`getClass` 时调用的是`this.getClass()`, 而静态方法没有`this`。所以应该使用以下表达式：
+>
+> ```java
+> new Object(){}.getClass().getEnclosingClass() // gets class of static method
+> ```
+>
+> 在这里，`newObject(){}` 会建立`Object` 的一个匿名子类的一个匿名对象，`getEnclosingClass`则得到其外围类， 也就是包含这个静态方法的类。
+
 ##### 调用静态方法
 
 静态方法可以看成是类本身的成员，而且本质上是全局的。
@@ -2076,7 +2338,7 @@ this(可选的实参列表);
 
 嵌套是一种类之间的关系，而不是对象之间的关系。外围类的对象并不包含嵌套类的对象。
 
-嵌套类只是一种编译器现象，与虚拟机无关。编译器会将嵌套类翻译成名为`外围类名$内部类名`的类，而虚拟机对此一无所知。
+嵌套类只是一种编译器现象，与虚拟机无关。编译器会将嵌套类翻译成名为`外围类名$嵌套类名`的类，而虚拟机对此一无所知。
 
 #### 内部类——非静态嵌套类
 
@@ -2143,15 +2405,128 @@ Outer.Inner = outer.new Inner();
 
 #### 静态嵌套类
 
+只有嵌套类才能使用`static`修饰符。
+
 静态嵌套类没有引用外围类对象的指针。
 
 静态嵌套类只能直接访问外围类的静态成员，而不能直接访问外围类的实例成员。要访问外围类的实例成员，必须要先获得外围类的实例。外围类也可以通过`静态嵌套类.静态成员`的方式来访问静态嵌套类的静态成员。
 
 > C++中也有嵌套类，它类似于Java的静态嵌套类。
 
+如果静态嵌套类对外围类的外部可见，则在外围类的外部，就必须使用`new 外围类.静态嵌套类(可选的实参列表)`来创建静态嵌套类的实例。并且，在外围类外部，必须使用`外围类.静态嵌套类`形式来引用静态嵌套类：
+
+```java
+Outer.Inner = new Outer.Inner();
+```
+
+声明在接口中的嵌套类自动成为`static` 和`public` 。
+
 #### 局部类
 
+前面的内部类和静态嵌套类都是定义在类作用域中的。其实，嵌套类还可以定义在块作用域中，例如方法体或块语句中，这称为局部类。
+
+局部类只在所在的块作用域中可见。
+
+```java
+class Outer {
+  int outerX = 100;
+  
+  void test() {
+    for (int i=0; i<10; i++) {
+      class Inner {
+        void display() {
+          System.out.println("display: outerX = " + outerX);
+        }
+      }
+      Inner inner = new Inner();
+      inner.display();
+    }
+  }
+}
+```
+
+与其他内部类相比较，局部类还有一个优点。它们不仅能够访问包含它们的外围类， 还可以访问局部变量。在Java 8之前，局部类只允许访问`final`的局部变量。为了适应lambda表达式，现在局部内部类可以访问任何被初始化后，就不会再被重新赋予新值的局部变量（effectively final）。
+
+```java
+public void start(int interval, boolean beep) {
+  class TimePrinter implements ActionListener {
+    public void actionPerformed(ActionEvent event) {
+      System.out.println("At the tone, the time is " + new Date())；
+        if (beep) Toolkit.getDefaultToolkit().beep();
+    }
+  }
+  ActionListener listener = new TimePrinter();
+  Timer t = new Timer(interval, listener);
+  t.start();
+}
+```
+
+如果确实需要改变局部变量，则该局部变量可以声明为一个长度为1的数组：
+
+```java
+int[] counter = new int[1];
+for (int i=0; i<dates.length; i++) {
+  dates[i] = new Date() {  //匿名类实际上也是局部类
+    public int compareTo(Date other) {
+      counter[0]++;
+      return super.compareTo(other);
+    }
+  };
+}
+```
+
 #### 匿名类
+
+匿名类实际上也是局部类，而且只能创建匿名类的一个实例。
+
+匿名类的一般形式：
+
+```java
+new 超类(可选的构造器实参列表) {
+  …
+}
+//或者
+new 接口() {
+  …
+}
+```
+
+匿名类不能有构造器。取而代之的是，将构造器参数传递给超类（superclass) 构造器。尤其是在局部类实现接口的时候， 不能有任何构造参数。
+
+示例：
+
+```java
+public void start(int interval, boolean beep) {
+  ActionListener listener = new ActionListener() {
+    public void actionPerformed(ActionEvent event) {
+      System.out.println("At the tone, the time is " + new Date())；
+        if (beep) Toolkit.getDefaultToolkit().beep();
+    }
+  }；
+    Timer t = new Timer(interval, listener);
+  t.start()；
+}
+```
+
+> 之前，匿名类常用来实现事件监听器和其他回调，但如今最好使用lambda表达式，会简洁得多：
+>
+> ```java
+> public void sta「t (int interval , boolean beep) {
+>   Timer t = new Timer(interval , event -> {
+>     System.out.println("At the tone, the time is " + new Date());
+>     if (beep) Toolkit.getDefaultToolkit().beep();
+>   })；
+>   t.start();
+> }
+> ```
+
+在创建匿名类时，对于`equals`方法的重写要特别当心。因为，下列测试对匿名类是会失败的：
+
+```java
+if (getClass() != other.getClass()) return false;
+```
+
+
 
 #### 嵌套类的访问控制
 

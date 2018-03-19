@@ -882,15 +882,46 @@ StringBuffer sb = new StringBuffer("I Java!");
 sb.insert(2, "like ");  //sb="I like Java!"
 ```
 
+`reverse`方法颠倒`StringBuffer`对象中的字符。
 
+`delete`方法删除指定索引范围内的字符，`deleteCharAt`方法删除指定索引的一个字符：
+
+```java
+StringBuffer sb = new StringBuffer("This is a test.");
+sb.delete(4, 7);    //"This a test."
+sb.deleteCharAt(0); //"his a test."
+```
+
+`replace`方法将`StringBuffer`对象中的一个子串替换为另一个子串：
+
+```java
+StringBuffer sb = new StringBuffer("This is a test.");
+sb.replace(5, 7, "was");  //"This was a test."
+```
 
 ## StringBuilder
 
-`StringBuilder`也支持可变的字符串，但是，它适合在单线程环境中。它的效率比`StringBuffer`高一些。
+`StringBuilder`是由JDK 5引入的，它也支持可变的字符串，但是，它不是同步的，适合在单线程环境中。它的效率比`StringBuffer`高一些。
 
 其他参见`StringBuffer`。
 
 # 枚举类型
+
+Java中枚举是一种类类型。
+
+## 定义枚举
+
+```java
+enum Size { SMALL, MEDIUM, LARGE, EXTRA_LARCE };
+```
+
+## 枚举变量声明
+
+```java
+Size s;
+```
+
+尽管枚举是类类型，但不能使用`new`来实例化。实际上，枚举量就是枚举的实例。
 
 # 表达式
 

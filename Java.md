@@ -907,7 +907,7 @@ sb.replace(5, 7, "was");  //"This was a test."
 
 # 枚举类型
 
-Java中枚举是一种类类型。
+Java中枚举是一种类类型。所有枚举类型都是`Enum`类的子类。
 
 ## 定义枚举
 
@@ -915,13 +915,67 @@ Java中枚举是一种类类型。
 enum Size { SMALL, MEDIUM, LARGE, EXTRA_LARCE };
 ```
 
+枚举类型可以作为嵌套类（总是静态的），但是不能作为局部类。
+
 ## 枚举变量声明
 
 ```java
 Size s;
+s = Size.MEDIUM;
 ```
 
-尽管枚举是类类型，但不能使用`new`来实例化。实际上，枚举量就是枚举的实例。
+尽管枚举是类类型，但不能使用`new`来实例化。实际上，枚举量就是枚举的所有实例。枚举变量只能存储这些枚举量或者`null`值。
+
+枚举变量声明和初始化可以同时进行：
+
+```java
+Size s = Size.MEDIUM;
+```
+
+## 使用枚举
+
+### 比较枚举值
+
+比较两个枚举类型的值的相等性时，可直接使用`==`，而不需要使用`equals`方法。
+
+### 类型转换
+
+`toString`和`name`方法会返回枚举量的字符串名。
+
+`valueOf`静态方法会将字符串的枚举量名转换为枚举类型的枚举量：
+
+```java
+Size sz = Enum.valueOf(Size.class, "SMALL"); 
+Size sz2 = Size.valueOf("SMALL"); 
+```
+
+`values`静态方法返回一个包含全部枚举量的数组：
+
+```java
+Size[] values = Size.values();
+```
+
+`ordinal`方法返回枚举量的序数，位置从0开始计数。例如：`Size.MEDIUM.ordinal()`返回1。
+
+`compareTo`方法比较相同类型的两个枚举量的序数值。
+
+## 高级枚举
+
+可以为枚举提供构造器、实例字段和字例方法，甚至可以实现接口。当然，构造器只是在构造枚举量时被调用。
+
+```java
+public enum Size {
+  SMALL("S"), MEDIUM("M"), LARGE, EXTRA_LARGE("XL");
+  private String abbreviation;
+  private Size() { this.abbreviation = "L"; }
+  private Size(String abbreviation) { this.abbreviation = abbreviation; }
+  public String getAbbreviation() { return abbreviation; }
+}
+…
+Size s = Size.MEDIUM;  //不需要带参数
+```
+
+枚举不能继承其他类，也不是作为超类。
 
 # 表达式
 
@@ -1340,7 +1394,7 @@ switch (count) {
 
 #### 在switch语句中使用枚举
 
-当在switch 语句中使用枚举常量时，不必在每个case选项中为枚举量加上枚举名限定。因为，可以由switch 的表达式值确定。例如：
+当在switch 语句中使用枚举常量时，不允许在每个case选项中为枚举量加上枚举名限定。因为，可以由switch 的表达式值确定。例如：
 
 ```java
 enum Size { SMALL, MEDIUM, LARGE, EXTRA_LARCE };
@@ -2225,6 +2279,48 @@ tripleSalary(harry) ;  //现在该雇员工资提升了3倍
 
 ##### 可变长度参数
 
+从JDK 5开始，Java提供了一种可以使用数量可变的参数的方法，称为可变参数方法（varargs，variable-arity method）。
+
+可变长度参数的一般形式：
+
+```java
+类型 ... 参数名
+```
+
+可变参数方法可以接受零个或任意多个参数。可变长度参数被隐式地声明为一个数组，因此，在可变参数方法的内部，可以使用常规的数组语法来访问可变长度参数。对于没有参数的情况，数组的长度为0。
+
+```java
+void vaTest(int... v) {
+  System.out.print("Number of args: " + v.length + " Contents: ");
+  for (int x : v)
+    System.out.print(x + " ");
+  System.out.println();
+}
+…
+vaTest(10);
+vaTest(1, 2, 3);
+vaTest();
+```
+
+可变长度参数必须是方法的最后一个参数：
+
+```java
+int doIt(int a, int b, double c, int ... vals) {}
+```
+
+此外，一个方法最多只能有一个可变长度参数。
+
+可变参数方法也可以重载：
+
+```java
+void vaTest(int ... v) {}
+void vaTest(boolean ... v) {}
+void vaTest(String msg, int ... v) {}
+void vaTest(int v) {}  //只提供一个int参数时，匹配这个方法
+```
+
+> 上面的方法，如果以无参方法调用——`vaTest()`，将报错。因为，第一个重载版本和第二个重载版本都会匹配。
+
 #### 返回值
 
 方法是通过`return`语句来返回值的。
@@ -2353,7 +2449,9 @@ class Employee {
 this(可选的实参列表);
 ```
 
-调用其他构造器的语句必须是构造器体中的第一条语句。
+调用其他构造器的语句必须是构造器体中执行的第一条语句。
+
+与`super`不同，构造器不会自动调用无参的默认构造器。因为，类可以没有无参的默认构造器。
 
 > 在Java 中， `this` 引用等价于C++ 的`this` 指针。但是， 在C++ 中， 一个构造器不能调用另一个构造器。在C++ 中， 必须将抽取出的公共初始化代码编写成一个独立的方法。
 
@@ -2585,9 +2683,131 @@ protected void finalize() {
 
 ## 继承
 
+继承（inheritance）是面向对象编程的基石之一。利用继承，人们可以基于已存在的类构造一个新类。
+
+被继承的类被称为超类（superclass）、基类（base class）或父类（parent class），进行继承的类被称为子类（subclass）、派生类（derived class）或孩子类（child class）。子类是超类的特殊化版本，子类会继承超类的所有成员，并可以添加自己特有的成员。
+
+```java
+public class Manager extends Employee {
+  …
+}
+```
+
+> Java 与C++ 定义继承类的方式十分相似。Java 用关键字`extends` 代替了C++中的冒号`:`。在Java 中，所有的继承都是公有继承，而没有C++ 中的私有继承和保护继承。
+
+一个类最多只能继承一个超类——单继承，Java不支持一个类同时继承多个超类——多继承。并且，类不能继承自身。
+
+尽管子类包含了超类的所有成员，但是子类不能访问超类中被声明为`private`的那些成员。
+
 ### `super`关键字
 
+> `this`是一个引用，可以赋给一个变量。而`super`不是一个对象的引用，不能将它赋给变量，它只是一个指示编译器访问超类成员的特殊关键字。
+
+#### 访问超类成员
+
+`super`可用于访问**直接**超类中被子类成员屏蔽的成员。
+
+```java
+class A {
+  int i;
+  void doIt() {…}
+}
+
+class B extends A {
+  int i;  //这个i将屏蔽超类A中的i
+  B(int a, int b) {
+    super.i = a;  //给超类A中的i赋值
+    i = b;  //给B类中的i赋值
+  }
+  void doIt() {
+    super.doIt();  //调用超类中的doIt方法
+  }
+}
+```
+
+> 在Java 中使用关键字`super` 访问超类的成员， 而在C++ 中则采用超类名加上`::`操作符的形式。例如，`Employee::getSalary()`。
+
+#### 调用超类构造器
+
+可以通过下面语句调用**直接**超类中定义的构造器：
+
+```java
+super(可选的实参列表);
+```
+
+调用超类构造器的语句必须是子类构造器体中执行的第一条语句。如果是调用超类的无参默认构造器，则`super();`可以省略。即如果子类的构造器没有显式地调用超类的构造器， 则将自动地调用超类默认（没有参数)
+的构造器。如果超类没有不带参数的构造器， 并且在子类的构造器中又没有显式地调用超类的其他构造器，则Java 编译器将报告错误。
+
+> 在C++的构造器中，使用初始化列表语法调用超类的构造器，而不是调用super：
+>
+> ```c++
+> Manager::Manager(Stri ng name, double salary, int year, int month, int day) // C++
+> 		: Employee(name, salary, year, month, day) {
+> 	bonus = 0;
+> }
+> ```
+
 ### 方法重写和多态
+
+在类层次中，如果子类的一个方法和超类的某个方法具有相同的方法签名，那么称子类中的这个方法重写了超类中相应的那个方法。
+
+重写与重载的区别：
+
+- 重写只能发生在有继承关系的类中，子类方法重写超类方法。而重载则不限；
+- 重写的两个方法的方法签名要完全相，而重载除了方法名要相同外，参数的个数、类型、顺序不能完全相同；
+- 在发生重写时，子类的方法会屏蔽超类中被重写的方法。而重载方法之间不会互相屏蔽。
+
+在Java语言中，对象变量是多态的（polymorphism）。一个超类变量既可以引用一个超类对象， 也可以引用一个它的任何一个子孙类的对象，这也称为“向上转型”。然而，不能将一个超类对象赋给子类变量。
+
+> 在Java 中， 子类数组的引用可以转换成超类数组的引用， 而不需要采用强制类型转换：
+>
+> ```java
+> Manager[] managers = new Manager[10];
+> Employee[] staff = managers; // OK
+> staff[0] = new Employee();  //编译时能通过，但运行时报ArrayStoreException异常。这是因为，managers与staff是引用相同的数组，因而staff[0]==managers[0]。而managers[0]只能装Manager实例，而没办法装Employee实例。
+> ```
+
+当通过超类变量调用重写方法时，Java运行时将根据当前引用的对象的类型（不是变量的类型）来决定将要执行哪个重写方法。
+
+```java
+class A {
+  void callme() {…}
+}
+
+class B extends A {
+  void callme() {…}
+}
+
+class C extends B {
+  void callme() {…}
+}
+
+class Dispatch {
+  public static void main(String[] args) {
+    A a = new A();
+    B b = new B();
+    C c = new C();
+    A aa;  //aa是一个A类的变量
+    
+    aa = a;
+    aa.callme();  //调用A类的callme方法
+    
+    aa = b;  //a现在引用了B的实例
+    aa.callme();  //调用B类的callme方法
+    
+    aa = c;  //a现在引用了C的实例
+    aa.callme();  //调用C类的callme方法
+  }
+}
+```
+
+在运行时能够自动地选择调用哪个方法的现象称为动态绑定（dynamic binding）或动态方法调度（dynamic method dispatch）。在Java中，动态绑定是默认的处理方式。但是，`private`方法、`static`方法、`final`方法或者构造器是采用静态绑定的，它们没有多态行为。
+
+> Java中的重写方法类似于C++的虚函数。
+
+在重写方法时，子类重写方法的返回类型既可以与超类方法返回类型相同，也可以是超类方法返回类型的子类型。
+
+在重写方法，子类方法的可见性不能低于超类方法。特别是，如果超类方法是`public`, 子类方法一定要声明为`public`。
 
 ### `final`修饰符
 

@@ -2775,7 +2775,7 @@ class A {
 }
 
 class B extends A {
-  void callme() {…}
+  @Override void callme() {…}  //为了避免意外重写，最好在重写方法时，加上@Override标注
 }
 
 class C extends B {
@@ -2801,7 +2801,7 @@ class Dispatch {
 }
 ```
 
-在运行时能够自动地选择调用哪个方法的现象称为动态绑定（dynamic binding）或动态方法调度（dynamic method dispatch）。在Java中，动态绑定是默认的处理方式。但是，`private`方法、`static`方法、`final`方法或者构造器是采用静态绑定的，它们没有多态行为。
+在**运行时**能够自动地选择调用哪个方法的现象称为动态绑定（dynamic binding）或动态方法调度（dynamic method dispatch）。在Java中，动态绑定是默认的处理方式。但是，`private`方法、`static`方法、`final`方法或者构造器是采用静态绑定的（在**编译时**绑定），它们没有多态行为。
 
 > Java中的重写方法类似于C++的虚函数。
 
@@ -2835,19 +2835,154 @@ public void giveGoldStar() {
 }
 ```
 
-`final`方法形参由实参初始化，`final`局部常量只能在声明时初始化。
+`final`方法的形参由实参初始化，`final`局部常量只能在声明时初始化。
 
 #### `final`方法
 
+使用`final`声明的方法不能被重写。
+
+```java
+public cl ass Employee {
+  public final String getName() {
+    …
+  }
+  …
+}
+```
+
+将方法声明为`final`，有时可以提高性能：编译器可以自由地内联对这类方法的调用，因为编译器知道这些方法不能被子类重写。编译器也会对那么短小、被频繁调用且没有被重写的非`final`方法进行内联处理。但是，如果虚拟机加载了另外一个子类，而在这个子类中包含了对内联方法的重写，则优化器将取消对重写方法的内联。这个过程很慢，但却很少发生。
+
 #### `final`类
+
+使用`final`声明的类，将不能被继承。`final`类会隐式地将类的所有方法声明为`final`，但不包括字段。
+
+不能将类同时声明为`abstract`和`final`。
+
+```java
+public final class Executive extends Manager {
+  …
+}
+```
 
 ### 继承与组合
 
-## `Object`类
-
 ## 抽象类
 
+使用`abstract`声明的类称为抽象类，它不能被实例化，只能被其他类继承。
 
+在抽象类的定义中可以包含使用`abstract`声明的抽象方法和具体方法。
+
+抽象方法没有方法体，只能由子类来实现。
+
+构造器、静态方法、`final`方法不能声明为`abstract`。
+
+抽象方法只能存在于抽象类中，但抽象类可以不包含任何抽象方法。
+
+```java
+public abstract class Person {
+  private String name;
+  public Person(String name) {
+    this.name = name;
+  }
+  public abstract String getDescription()；
+  public String getName() {
+    return name;
+  }
+}
+
+public class Student extends Person {
+  private String major;
+  public Student(String name, String major) {
+    super(name);
+    this.major = major;
+  }
+  public String getDescription() {
+    return "a student majoring in " + major;
+  }
+}
+```
+
+子类继承抽象类后，要么实现超类中的所有抽象方法，要么自己也声明为抽象的。
+
+尽管抽象类不能用于实例化对象，但是可以使用它们创建对象引用，并且只能引用具体子类的实例：
+
+```java
+Person p = new Student("Vinee Vu", "Economics");
+```
+
+> 在C++中，有一种在尾部用`=0` 标记的抽象方法，称为纯虚函数，例如：
+>
+> ```c++
+> class Person {  // C++
+>   public:
+>     virtual string getDescription() = 0;
+>   …
+> };
+> ```
+>
+> 只要有一个纯虚函数，这个类就是抽象类。在C++ 中，没有提供用于表示抽象类的特殊关键字。
+
+## `Object`类
+
+`Object`类是Java中所有类的超类。一个类定义，如果没有显式指出超类，则超类默认是`Object`。
+
+在Java中，只有基本类型（primitive types）不是对象。数组也是对象，包括基本类型的数组。
+
+可以使用`Object`类的变量引用任何类的对象。
+
+> 在C++ 中没有所有类的根类，不过，每个指针都可以转换成`void*` 指针。
+
+### `equals`方法
+
+在`Object`类中，`equals`方法与`==`是一样的，都是比较两个对象是否具有相同的引用。大多数情况，我们要重写这个方法，让它比较两个对象的状态是否相同：
+
+```java
+public class Employee {
+  …
+  public boolean equals(Object otherObject) {
+    // a quick test to see if the objects are identical
+    if (this == otherObject) return true;
+    // must return false if the explicit parameter is null
+    if (otherObject == null ) return false;
+    // if the classes don't match, they can't be equal
+    if (getClass() != otherObject.getClass())
+      return false;
+    // now we know otherObject is a non-null Employee
+    Employee other = (Employee) otherObject;
+    // test whether the fields have identical values
+    return Objects.equals(name, other.name)  //Objects.equals()允许它的参数为null
+      && salary == other.salary
+      && Objects.equals(hireDay, other.hireDay);
+  }
+}
+```
+
+> 如果`equals`的语义在每个子类中有所改变，则像上面一样使用`getClass`来检测它们是否属于同一个类；如果所有的子类都拥有统一的语义，就使用`instanceof`来检测，这时比较的两个对象可以一个是父类，另一个是子类，类型不需要完全相同：
+>
+> ```java
+> if (!(otherObject instanceof ClassName)) return false;
+> ```
+> 
+>对于数组类型的字段，可以使用静态的`Arrays.equals`方法检测相应的数组元素是否相等。
+
+在子类中定义`equals` 方法时，首先调用超类的`equals`。如果检测失败，对象就不可能相等。如果超类中的字段都相等，就需要比较子类中的实例字段：
+
+```java
+public class Manager extends Employee {
+  public boolean equals(Object otherObject) {
+    if (!super.equals(otherObject)) return false;
+    // super.equals checked that this and otherObject belong to the same class
+    Manager other = (Manager) otherObject;
+    return bonus == other.bonus;
+  }
+}
+```
+
+
+
+### `hashCode`方法
+
+### `toString`方法
 
 ## 对象包装器
 
@@ -2944,6 +3079,8 @@ public Employee (String name, double salary, int year, int month, int day) {
 
 ## 类型检测
 
+`instanceof`运算符可以检测一个对象是否是某个类型的实例。例如：`x instanceof C`。这里`x`可以为`null`，不会产生异常，只是返回`false`。
+
 ## 类型兼容
 
 ## 类型转换
@@ -3004,6 +3141,25 @@ b = b * 2;  //报错！不能将右侧的int类型结果赋值给左侧的byte�
 (目标类型) 待转换的表达式
 ```
 
+> Java的强制类型转换语法有些像C++的`dynamic_cast`。例如：
+>
+> ```java
+> Manager boss = (Manager) staff[1]; // Java
+> ```
+>
+> 等价于
+>
+> ```c++
+> Manager* boss = dynamic_cast<Manager*>(staff[1]); // C++
+> ```
+>
+> 它们之间只有一点重要的区别： 当类型转换失败时， Java 不会生成一个null 对象，而是抛出一个异常。从这个意义上讲， 有点像C++ 中的引用（ reference ) 转换。而`dynamic_cast`在转换失败时，会生成`NULL`值，从而可以在一个操作中完成类型测试和类型转换：
+>
+> ```c++
+> Manager* boss = dynamic_cast<Manager*>(staff[1]); // C++
+> if (boss != NULL) …
+> ```
+
 #### 窄化转换
 
 容量大的数值类型转换为容量小的数值类型，必须显式转换。因为这种转换可能会丢失精度。
@@ -3032,7 +3188,7 @@ b = (byte) d; //截尾并取模，b：67
 
 必须是有继承关系的类之间才能进行向下转型。
 
-通常父类型对象不能显式地转换为子类型对象。只有当父类变量原来就是存放子类型对象时，才能显式转换为相应的子类型对象。例如，`Student`继承于`Person`： 
+通常超类对象不能显式地转换为子类对象。只有当超类变量原来就是存放子类对象时，才能显式转换为相应的子类对象。例如，`Student`继承于`Person`： 
 
 ```java
 Person p1 = new Person();
@@ -3041,6 +3197,17 @@ Student s1 = (Student)p1; // 错误，不能转换
 Person p2 = new Student();
 Student s2 = (Student) p2; //可以转换，因为p2里实际放的是一个Student实例。
 ```
+
+因此，在向下转型之前，可先查看一下是否能够成功地转换：
+
+```java
+Student s2 = null;
+if (p2 instanceof Student) {
+  s2 = (Student) p2;
+}
+```
+
+
 
 ## 类型推断
 
@@ -3078,7 +3245,9 @@ BigInteger a = BigInteger.valueOf(100);
 
 # 元编程
 
+## 反射
 
+## 标注
 
 # 模块
 
